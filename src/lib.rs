@@ -6,6 +6,81 @@ use std::slice;
 
 pub use error::{LTCDecoderError, LTCEncoderError};
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct SMPTETimecode {
+    pub timezone: [u8; 6], // "+HHMM" textual representation
+    pub years: u8,         // LTC-date uses 2-digit year 00..99
+    pub months: u8,        // valid months are 1..12
+    pub days: u8,          // day of the month 1..31
+
+    pub hours: u8, // hour 0..23
+    pub mins: u8,  // minute 0..60
+    pub secs: u8,  // second 0..60
+    pub frame: u8, // sub-second frame 0..(FPS - 1)
+}
+
+bitfield::bitfield! {
+    #[repr(C)]
+    #[derive(Debug, Copy, Clone)]
+    pub struct LTCFrame(u128);  // Use a large enough integer to hold all bitfields
+
+    // Frame bitfield structure (Little Endian layout for Rust)
+    u8, frame_units, set_frame_units: 3, 0; // BCD unit for frame number
+    u8, user1, set_user1: 7, 4;
+
+    u8, frame_tens, set_frame_tens: 9, 8;    // BCD tens for frame number
+    bool, dfbit, set_dfbit: 10;              // Drop frame indicator
+    bool, col_frame, set_col_frame: 11;      // Colour frame indicator
+    u8, user2, set_user2: 15, 12;
+
+    u8, secs_units, set_secs_units: 19, 16;  // BCD unit for seconds
+    u8, user3, set_user3: 23, 20;
+
+    u8, secs_tens, set_secs_tens: 26, 24;    // BCD tens for seconds
+    bool, biphase_mark_phase_correction, set_biphase_mark_phase_correction: 27;
+    u8, user4, set_user4: 31, 28;
+
+    u8, mins_units, set_mins_units: 35, 32;  // BCD unit for minutes
+    u8, user5, set_user5: 39, 36;
+
+    u8, mins_tens, set_mins_tens: 42, 40;    // BCD tens for minutes
+    bool, binary_group_flag_bit0, set_binary_group_flag_bit0: 43;
+    u8, user6, set_user6: 47, 44;
+
+    u8, hours_units, set_hours_units: 51, 48; // BCD unit for hours
+    u8, user7, set_user7: 55, 52;
+
+    u8, hours_tens, set_hours_tens: 57, 56;  // BCD tens for hours
+    bool, binary_group_flag_bit1, set_binary_group_flag_bit1: 58;
+    bool, binary_group_flag_bit2, set_binary_group_flag_bit2: 59;
+    u8, user8, set_user8: 63, 60;
+
+    u16, sync_word, set_sync_word: 79, 64;   // Sync word (16 bits)
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct LTCFrameExt {
+    pub ltc: LTCFrame,           // Actual LTC frame data
+    pub off_start: i64,          // Start offset in the audio stream
+    pub off_end: i64,            // End offset in the audio stream
+    pub reverse: i32,            // Reverse playback flag
+    pub biphase_tics: [f32; 80], // Phase timing info in audio-frames for each bit
+    pub sample_min: u8,          // Minimum signal sample (0..255)
+    pub sample_max: u8,          // Maximum signal sample (0..255)
+    pub volume: f64,             // Volume of the input signal in dbFS
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Debug, Copy, Clone)]
+pub enum LTCTVStandard {
+    LTCTV_525_60,  // 30fps
+    LTCTV_625_50,  // 25fps
+    LTCTV_1125_60, // 30fps
+    LTCTV_FILM_24, // 24fps
+}
+
 #[derive(Debug)]
 pub struct LTCEncoder {
     inner: *mut raw::LTCEncoder,
@@ -16,6 +91,7 @@ pub struct LTCDecoder {
     inner: *mut raw::LTCDecoder,
 }
 
+/*
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct SMPTETimecode {
@@ -48,11 +124,13 @@ pub enum LTCTVStandard {
     LTCTV_1125_60, // 30fps
     LTCTV_FILM_24, // 24fps
 }
+*/
 
 // Frame-related functions
 impl LTCFrame {
     pub fn new() -> Self {
-        let mut frame = LTCFrame { ltc: [0; 10] };
+        let mut frame = LTCFrame { 0: 0 };
+
         unsafe {
             raw::ltc_frame_reset(&mut frame as *mut _);
         }
@@ -65,6 +143,10 @@ impl LTCFrame {
             mins: 0,
             secs: 0,
             frame: 0,
+            timezone: [0; 6],
+            years: 0,
+            months: 0,
+            days: 0,
         };
         unsafe {
             raw::ltc_frame_to_time(&mut timecode as *mut _, self as *const _, flags);
@@ -106,7 +188,7 @@ impl LTCFrame {
     pub fn get_user_bits(&self) -> u32 {
         unsafe { raw::ltc_frame_get_user_bits(self as *const _) as u32 }
     }
-    pub fn ltc_frame_alignment(samples_per_frame: f64, standard: LTCTVStandard) -> i64 {
+    pub(crate) fn ltc_frame_alignment(samples_per_frame: f64, standard: LTCTVStandard) -> i64 {
         unsafe { raw::ltc_frame_alignment(samples_per_frame, standard.to_raw()) }
     }
 }
@@ -184,6 +266,10 @@ impl LTCDecoder {
             off_start: 0,
             off_end: 0,
             reverse: 0,
+            biphase_tics: [0.0; 80],
+            sample_min: 0,
+            sample_max: 0,
+            volume: 0.0,
         };
         let result = unsafe { raw::ltc_decoder_read(self.inner, &mut frame as *mut _) };
         if result == 0 {
@@ -233,6 +319,10 @@ impl LTCEncoder {
             mins: 0,
             secs: 0,
             frame: 0,
+            timezone: [0; 6],
+            years: 0,
+            months: 0,
+            days: 0,
         };
         unsafe {
             raw::ltc_encoder_get_timecode(self.inner, &mut timecode as *mut _);
