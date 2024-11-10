@@ -29,7 +29,7 @@ mod additions {
                 off_start: Default::default(),
                 off_end: Default::default(),
                 reverse: Default::default(),
-                biphase_tics: [Default::default(); 80],
+                biphase_tics: [Default::default(); autogen::LTC_FRAME_BIT_COUNT as usize],
                 sample_min: Default::default(),
                 sample_max: Default::default(),
                 volume: Default::default(),
