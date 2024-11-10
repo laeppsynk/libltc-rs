@@ -1,4 +1,4 @@
-use build_print::{println, *};
+use build_print::println;
 use std::env;
 
 use std::path::PathBuf;

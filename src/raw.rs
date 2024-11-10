@@ -1,5 +1,7 @@
 pub(crate) use autogen::*;
 
+// Several functions in this library are deprecated. We allow dead code to avoid warnings.
+#[allow(dead_code)]
 mod autogen {
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
@@ -9,6 +11,7 @@ mod autogen {
 mod additions {
     use super::autogen;
 
+    #[allow(clippy::derivable_impls)]
     impl Default for autogen::LTCFrame {
         fn default() -> Self {
             Self {
@@ -34,6 +37,7 @@ mod additions {
         }
     }
 
+    #[allow(clippy::derivable_impls)]
     impl Default for autogen::SMPTETimecode {
         fn default() -> Self {
             Self {
