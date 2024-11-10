@@ -1,75 +1,29 @@
 // lib.rs
+#![allow(non_upper_case_globals)]
+#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
+
 mod error;
 mod raw;
 
 use std::slice;
 
 pub use error::{LTCDecoderError, LTCEncoderError};
+use raw::ltcsnd_sample_t;
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug)]
 pub struct SMPTETimecode {
-    pub timezone: [u8; 6], // "+HHMM" textual representation
-    pub years: u8,         // LTC-date uses 2-digit year 00..99
-    pub months: u8,        // valid months are 1..12
-    pub days: u8,          // day of the month 1..31
-
-    pub hours: u8, // hour 0..23
-    pub mins: u8,  // minute 0..60
-    pub secs: u8,  // second 0..60
-    pub frame: u8, // sub-second frame 0..(FPS - 1)
+    inner_unsafe: *mut raw::SMPTETimecode,
 }
 
-bitfield::bitfield! {
-    #[repr(C)]
-    #[derive(Debug, Copy, Clone)]
-    pub struct LTCFrame(u128);  // Use a large enough integer to hold all bitfields
-
-    // Frame bitfield structure (Little Endian layout for Rust)
-    u8, frame_units, set_frame_units: 3, 0; // BCD unit for frame number
-    u8, user1, set_user1: 7, 4;
-
-    u8, frame_tens, set_frame_tens: 9, 8;    // BCD tens for frame number
-    bool, dfbit, set_dfbit: 10;              // Drop frame indicator
-    bool, col_frame, set_col_frame: 11;      // Colour frame indicator
-    u8, user2, set_user2: 15, 12;
-
-    u8, secs_units, set_secs_units: 19, 16;  // BCD unit for seconds
-    u8, user3, set_user3: 23, 20;
-
-    u8, secs_tens, set_secs_tens: 26, 24;    // BCD tens for seconds
-    bool, biphase_mark_phase_correction, set_biphase_mark_phase_correction: 27;
-    u8, user4, set_user4: 31, 28;
-
-    u8, mins_units, set_mins_units: 35, 32;  // BCD unit for minutes
-    u8, user5, set_user5: 39, 36;
-
-    u8, mins_tens, set_mins_tens: 42, 40;    // BCD tens for minutes
-    bool, binary_group_flag_bit0, set_binary_group_flag_bit0: 43;
-    u8, user6, set_user6: 47, 44;
-
-    u8, hours_units, set_hours_units: 51, 48; // BCD unit for hours
-    u8, user7, set_user7: 55, 52;
-
-    u8, hours_tens, set_hours_tens: 57, 56;  // BCD tens for hours
-    bool, binary_group_flag_bit1, set_binary_group_flag_bit1: 58;
-    bool, binary_group_flag_bit2, set_binary_group_flag_bit2: 59;
-    u8, user8, set_user8: 63, 60;
-
-    u16, sync_word, set_sync_word: 79, 64;   // Sync word (16 bits)
+#[derive(Debug)]
+pub struct LTCFrame {
+    inner_unsafe: *mut raw::LTCFrame,
 }
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug)]
 pub struct LTCFrameExt {
-    pub ltc: LTCFrame,           // Actual LTC frame data
-    pub off_start: i64,          // Start offset in the audio stream
-    pub off_end: i64,            // End offset in the audio stream
-    pub reverse: i32,            // Reverse playback flag
-    pub biphase_tics: [f32; 80], // Phase timing info in audio-frames for each bit
-    pub sample_min: u8,          // Minimum signal sample (0..255)
-    pub sample_max: u8,          // Maximum signal sample (0..255)
-    pub volume: f64,             // Volume of the input signal in dbFS
+    inner_unsafe: *mut raw::LTCFrameExt,
 }
 
 #[allow(non_camel_case_types)]
@@ -83,114 +37,93 @@ pub enum LTCTVStandard {
 
 #[derive(Debug)]
 pub struct LTCEncoder {
-    inner: *mut raw::LTCEncoder,
+    inner_unsafe: *mut raw::LTCEncoder,
 }
 
 #[derive(Debug)]
 pub struct LTCDecoder {
-    inner: *mut raw::LTCDecoder,
+    inner_unsafe: *mut raw::LTCDecoder,
 }
 
-/*
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct SMPTETimecode {
-    pub hours: i32,
-    pub mins: i32,
-    pub secs: i32,
-    pub frame: i32,
-}
+type SampleType = ltcsnd_sample_t;
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct LTCFrame {
-    pub ltc: [u8; 10],
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct LTCFrameExt {
-    pub ltc: LTCFrame,
-    pub off_start: i64,
-    pub off_end: i64,
-    pub reverse: i32,
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, Copy, Clone)]
-pub enum LTCTVStandard {
-    LTCTV_525_60,  // 30fps
-    LTCTV_625_50,  // 25fps
-    LTCTV_1125_60, // 30fps
-    LTCTV_FILM_24, // 24fps
-}
-*/
-
-// Frame-related functions
+// frame-related functions
 impl LTCFrame {
     pub fn new() -> Self {
-        let mut frame = LTCFrame { 0: 0 };
+        let mut frame = LTCFrame {
+            inner_unsafe: &mut raw::LTCFrame::default(),
+        };
 
+        // SAFETY: frame is created above and is not null
         unsafe {
-            raw::ltc_frame_reset(&mut frame as *mut _);
+            #[allow(clippy::needless_borrow)] // for clarity
+            raw::ltc_frame_reset((&mut frame).inner_unsafe);
         }
         frame
     }
 
     pub fn to_timecode(&self, flags: i32) -> SMPTETimecode {
         let mut timecode = SMPTETimecode {
-            hours: 0,
-            mins: 0,
-            secs: 0,
-            frame: 0,
-            timezone: [0; 6],
-            years: 0,
-            months: 0,
-            days: 0,
+            inner_unsafe: &mut raw::SMPTETimecode::default(),
         };
+
+        // SAFETY: We own timecode. The function is assumed to only read the frame.
         unsafe {
-            raw::ltc_frame_to_time(&mut timecode as *mut _, self as *const _, flags);
+            #[allow(clippy::needless_borrow)] // for clarity
+            raw::ltc_frame_to_time((&mut timecode).inner_unsafe, self.inner_unsafe, flags);
         }
+
         timecode
     }
 
     pub fn from_timecode(timecode: &SMPTETimecode, standard: LTCTVStandard, flags: i32) -> Self {
         let mut frame = Self::new();
+
+        // SAFETY: We own frame. The function is assumed to only read the timecode.
         unsafe {
+            #[allow(clippy::needless_borrow)] // for clarity
             raw::ltc_time_to_frame(
-                &mut frame as *mut _,
-                timecode as *const _,
+                (&mut frame).inner_unsafe,
+                timecode.inner_unsafe,
                 standard.to_raw(),
                 flags,
             );
         }
+
         frame
     }
 
     pub fn increment(&mut self, fps: i32, standard: LTCTVStandard, flags: i32) -> bool {
-        unsafe { raw::ltc_frame_increment(self as *mut _, fps, standard.to_raw(), flags) != 0 }
+        // SAFETY: We own self
+        unsafe { raw::ltc_frame_increment(self.inner_unsafe, fps, standard.to_raw(), flags) != 0 }
     }
 
     pub fn decrement(&mut self, fps: i32, standard: LTCTVStandard, flags: i32) -> bool {
-        unsafe { raw::ltc_frame_decrement(self as *mut _, fps, standard.to_raw(), flags) != 0 }
+        // SAFETY: We own self
+        unsafe { raw::ltc_frame_decrement(self.inner_unsafe, fps, standard.to_raw(), flags) != 0 }
     }
 
     pub fn set_parity(&mut self, standard: LTCTVStandard) {
+        // SAFETY: We own self
         unsafe {
-            raw::ltc_frame_set_parity(self as *mut _, standard.to_raw());
+            raw::ltc_frame_set_parity(self.inner_unsafe, standard.to_raw());
         }
     }
 
-    pub fn parse_bcg_flags(&mut self, standard: LTCTVStandard) -> i32 {
-        unsafe { raw::ltc_frame_parse_bcg_flags(self as *mut _, standard.to_raw()) }
+    pub fn parse_bcg_flags(&self, standard: LTCTVStandard) -> i32 {
+        // SAFETY: The function is assumed to only read self (the frame)
+        unsafe { raw::ltc_frame_parse_bcg_flags(self.inner_unsafe, standard.to_raw()) }
     }
 
     pub fn get_user_bits(&self) -> u32 {
-        unsafe { raw::ltc_frame_get_user_bits(self as *const _) as u32 }
+        // SAFETY: The function is assumed to only read self (the frame)
+        unsafe { raw::ltc_frame_get_user_bits(self.inner_unsafe) as u32 }
     }
-    pub(crate) fn ltc_frame_alignment(samples_per_frame: f64, standard: LTCTVStandard) -> i64 {
-        unsafe { raw::ltc_frame_alignment(samples_per_frame, standard.to_raw()) }
-    }
+}
+
+pub fn calc_frame_alignment(samples_per_frame: f64, standard: LTCTVStandard) -> i64 {
+    // SAFETY: The function is assumed to be pure
+    unsafe { raw::ltc_frame_alignment(samples_per_frame, standard.to_raw()) }
 }
 
 impl Default for LTCFrame {
@@ -199,28 +132,44 @@ impl Default for LTCFrame {
     }
 }
 
-// LTCDecoder implementation
 impl LTCDecoder {
     pub fn try_new(apv: i32, queue_size: i32) -> Result<Self, LTCDecoderError> {
+        // Safety: the C function does not modify memory, it only allocates memory. Drop is
+        // implemented for LTCDecoder
         let decoder = unsafe { raw::ltc_decoder_create(apv, queue_size) };
         if decoder.is_null() {
             Err(LTCDecoderError::CreateError)
         } else {
-            Ok(LTCDecoder { inner: decoder })
+            Ok(LTCDecoder {
+                inner_unsafe: decoder,
+            })
         }
     }
 
-    pub fn write(&mut self, buf: &[i32], posinfo: i64) {
+    pub fn write(&mut self, buf: &[SampleType], posinfo: i64) {
+        // SAFETY: We own self. buf is only read.
         unsafe {
-            raw::ltc_decoder_write(self.inner, buf.as_ptr(), buf.len() as libc::size_t, posinfo);
+            // SAFETY: we can cast *const SampleType as *mut SampleType to accomodate for the C function
+            // signature, we assume that ltc_decoder_write is will only read from it
+            let mut_ptr_buf = buf.as_ptr() as *mut SampleType;
+            raw::ltc_decoder_write(
+                self.inner_unsafe,
+                mut_ptr_buf,
+                buf.len() as libc::size_t,
+                posinfo,
+            );
         }
     }
 
     pub fn write_double(&mut self, buf: &[f64], posinfo: i64) {
+        // SAFETY: We own self. buf is only read.
         unsafe {
+            // SAFETY: we can cast *const SampleType as *mut SampleType to accomodate for the C function
+            // signature, we assume that ltc_decoder_write is will only read from it
+            let mut_ptr_buf = buf.as_ptr() as *mut f64;
             raw::ltc_decoder_write_double(
-                self.inner,
-                buf.as_ptr(),
+                self.inner_unsafe,
+                mut_ptr_buf,
                 buf.len() as libc::size_t,
                 posinfo,
             );
@@ -228,10 +177,14 @@ impl LTCDecoder {
     }
 
     pub fn write_float(&mut self, buf: &[f32], posinfo: i64) {
+        // SAFETY: We own self. buf is only read.
         unsafe {
+            // SAFETY: we can cast *const SampleType as *mut SampleType to accomodate for the C function
+            // signature, we assume that ltc_decoder_write is will only read from it
+            let mut_ptr_buf = buf.as_ptr() as *mut f32;
             raw::ltc_decoder_write_float(
-                self.inner,
-                buf.as_ptr(),
+                self.inner_unsafe,
+                mut_ptr_buf,
                 buf.len() as libc::size_t,
                 posinfo,
             );
@@ -239,10 +192,14 @@ impl LTCDecoder {
     }
 
     pub fn write_s16(&mut self, buf: &[i16], posinfo: i64) {
+        // SAFETY: We own self. buf is only read.
         unsafe {
+            // SAFETY: we can cast *const SampleType as *mut SampleType to accomodate for the C function
+            // signature, we assume that ltc_decoder_write is will only read from it
+            let mut_ptr_buf = buf.as_ptr() as *mut i16;
             raw::ltc_decoder_write_s16(
-                self.inner,
-                buf.as_ptr(),
+                self.inner_unsafe,
+                mut_ptr_buf,
                 buf.len() as libc::size_t,
                 posinfo,
             );
@@ -250,28 +207,30 @@ impl LTCDecoder {
     }
 
     pub fn write_u16(&mut self, buf: &[u16], posinfo: i64) {
+        // SAFETY: We own self. buf is only read.
         unsafe {
+            // SAFETY: we can cast *const SampleType as *mut SampleType to accomodate for the C function
+            // signature, we assume that ltc_decoder_write is will only read from it
+            let mut_ptr_buf = buf.as_ptr() as *mut u16;
             raw::ltc_decoder_write_u16(
-                self.inner,
-                buf.as_ptr(),
+                self.inner_unsafe,
+                mut_ptr_buf,
                 buf.len() as libc::size_t,
                 posinfo,
             );
         }
     }
 
-    pub fn read(&mut self) -> Option<LTCFrameExt> {
+    pub fn read(&self) -> Option<LTCFrameExt> {
         let mut frame = LTCFrameExt {
-            ltc: LTCFrame::new(),
-            off_start: 0,
-            off_end: 0,
-            reverse: 0,
-            biphase_tics: [0.0; 80],
-            sample_min: 0,
-            sample_max: 0,
-            volume: 0.0,
+            inner_unsafe: &mut raw::LTCFrameExt::default(),
         };
-        let result = unsafe { raw::ltc_decoder_read(self.inner, &mut frame as *mut _) };
+
+        // SAFETY: We own frame. The function is assumed to only read from self and write to frame
+        let result = unsafe {
+            #[allow(clippy::needless_borrow)] // for clarity
+            raw::ltc_decoder_read(self.inner_unsafe, (&mut frame).inner_unsafe)
+        };
         if result == 0 {
             None
         } else {
@@ -280,17 +239,26 @@ impl LTCDecoder {
     }
 
     pub fn queue_flush(&mut self) {
+        // SAFETY: We own self
         unsafe {
-            raw::ltc_decoder_queue_flush(self.inner);
+            raw::ltc_decoder_queue_flush(self.inner_unsafe);
         }
     }
 
     pub fn queue_length(&self) -> i32 {
-        unsafe { raw::ltc_decoder_queue_length(self.inner) }
+        // SAFETY: The function is assumed to only read self
+        unsafe { raw::ltc_decoder_queue_length(self.inner_unsafe) }
     }
 }
 
-// LTCEncoder implementation
+impl Default for SMPTETimecode {
+    fn default() -> Self {
+        SMPTETimecode {
+            inner_unsafe: &mut raw::SMPTETimecode::default(),
+        }
+    }
+}
+
 impl LTCEncoder {
     pub fn try_new(
         sample_rate: f64,
@@ -299,86 +267,118 @@ impl LTCEncoder {
         flags: i32,
     ) -> Result<Self, LTCEncoderError> {
         let raw_standard = standard.to_raw();
+        // Safety: the C function does not modify memory, it only allocates memory. Drop is implemented for LTCEncoder
         let encoder = unsafe { raw::ltc_encoder_create(sample_rate, fps, raw_standard, flags) };
         if encoder.is_null() {
             Err(LTCEncoderError::CreateError)
         } else {
-            Ok(LTCEncoder { inner: encoder })
+            Ok(LTCEncoder {
+                inner_unsafe: encoder,
+            })
         }
     }
 
     pub fn set_timecode(&mut self, timecode: &SMPTETimecode) {
+        // Safety: We own self, the function is assumed to only read the timecode and write to self
         unsafe {
-            raw::ltc_encoder_set_timecode(self.inner, timecode as *const _);
+            raw::ltc_encoder_set_timecode(self.inner_unsafe, timecode.inner_unsafe);
         }
     }
 
     pub fn get_timecode(&self) -> SMPTETimecode {
-        let mut timecode = SMPTETimecode {
-            hours: 0,
-            mins: 0,
-            secs: 0,
-            frame: 0,
-            timezone: [0; 6],
-            years: 0,
-            months: 0,
-            days: 0,
-        };
+        let mut timecode = SMPTETimecode::default();
+        // We own timecode, the function is assumed to only read from self and write to timecode
         unsafe {
-            raw::ltc_encoder_get_timecode(self.inner, &mut timecode as *mut _);
+            #[allow(clippy::needless_borrow)] // for clarity
+            raw::ltc_encoder_get_timecode(self.inner_unsafe, (&mut timecode).inner_unsafe);
         }
         timecode
     }
 
     pub fn set_user_bits(&mut self, data: u32) {
+        // SAFETY: We own self
         unsafe {
-            raw::ltc_encoder_set_user_bits(self.inner, data as libc::c_ulong);
+            raw::ltc_encoder_set_user_bits(self.inner_unsafe, data as libc::c_ulong);
         }
     }
 
     pub fn inc_timecode(&mut self) -> bool {
-        unsafe { raw::ltc_encoder_inc_timecode(self.inner) != 0 }
+        // SAFETY: We own self
+        unsafe { raw::ltc_encoder_inc_timecode(self.inner_unsafe) != 0 }
     }
 
     pub fn dec_timecode(&mut self) -> bool {
-        unsafe { raw::ltc_encoder_dec_timecode(self.inner) != 0 }
+        // SAFETY: We own self
+        unsafe { raw::ltc_encoder_dec_timecode(self.inner_unsafe) != 0 }
     }
 
     pub fn set_frame(&mut self, frame: &LTCFrame) {
-        unsafe {
-            raw::ltc_encoder_set_frame(self.inner, frame as *const _);
-        }
+        // SAFETY: We own self, the function is assumed to only read the frame and write to self
+        unsafe { raw::ltc_encoder_set_frame(self.inner_unsafe, frame.inner_unsafe) }
     }
 
     pub fn get_frame(&self) -> LTCFrame {
         let mut frame = LTCFrame::new();
+        // SAFETY: We own frame. The function is assumed to only read from self and write to frame
         unsafe {
-            raw::ltc_encoder_get_frame(self.inner, &mut frame as *mut _);
+            #[allow(clippy::needless_borrow)] // for clarity
+            raw::ltc_encoder_get_frame(self.inner_unsafe, (&mut frame).inner_unsafe);
         }
         frame
     }
 
-    pub fn get_buffer(&self, buf: &mut [i32]) -> i32 {
-        unsafe { raw::ltc_encoder_get_buffer(self.inner, buf.as_mut_ptr()) }
+    pub fn copy_buffer_inplace(&self, buf: &mut [SampleType]) -> i32 {
+        unsafe { raw::ltc_encoder_copy_buffer(self.inner_unsafe, buf.as_mut_ptr()) }
     }
 
-    pub fn get_bufptr(&self, flush: bool) -> (&[i32], i32) {
+    pub fn copy_buffer(&self) -> (Vec<u8>, i32) {
+        let mut buf = vec![0; self.get_buffersize()];
+        let size = unsafe { raw::ltc_encoder_copy_buffer(self.inner_unsafe, buf.as_mut_ptr()) };
+        (buf, size)
+    }
+
+    // TODO: Possible leak? does ptr ever get deallocated - maybe when the encoder is deallocated?
+    pub fn get_buf_ref(&self, flush: bool) -> (&[SampleType], usize) {
         let mut size: i32 = 0;
+        // SAFETY: We own self, we own size.
         let ptr = unsafe {
-            raw::ltc_encoder_get_bufptr(self.inner, &mut size as *mut _, if flush { 1 } else { 0 })
+            raw::ltc_encoder_get_bufptr(
+                self.inner_unsafe,
+                &mut size as *mut _,
+                if flush { 1 } else { 0 },
+            )
         };
-        let slice = unsafe { slice::from_raw_parts(ptr, size as usize) };
-        (slice, size)
+        // SAFETY: We own ptr and size
+        let mut_reference = unsafe { slice::from_raw_parts_mut(ptr, size as usize) };
+        (mut_reference, size as usize)
+    }
+
+    // TODO: Possible leak? does ptr ever get deallocated - maybe when the encoder is deallocated?
+    pub fn get_buf_ref_mut(&self, flush: bool) -> (&mut [SampleType], usize) {
+        let mut size: i32 = 0;
+        // SAFETY: We own self, we own size.
+        // This function allocates a buffer pointed at by ptr
+        let ptr = unsafe {
+            raw::ltc_encoder_get_bufptr(
+                self.inner_unsafe,
+                &mut size as *mut i32,
+                if flush { 1 } else { 0 },
+            )
+        };
+        // SAFETY: We own ptr and size, size is safe to cast to usize
+        let mut_reference = unsafe { slice::from_raw_parts_mut(ptr, size as usize) };
+        (mut_reference, size as usize)
     }
 
     pub fn buffer_flush(&mut self) {
         unsafe {
-            raw::ltc_encoder_buffer_flush(self.inner);
+            raw::ltc_encoder_buffer_flush(self.inner_unsafe);
         }
     }
 
     pub fn get_buffersize(&self) -> usize {
-        unsafe { raw::ltc_encoder_get_buffersize(self.inner) as usize }
+        // SAFETY: The function is assumed to only read self
+        unsafe { raw::ltc_encoder_get_buffersize(self.inner_unsafe) }
     }
 
     pub fn reinit(
@@ -389,7 +389,13 @@ impl LTCEncoder {
         flags: i32,
     ) -> Result<(), LTCEncoderError> {
         let result = unsafe {
-            raw::ltc_encoder_reinit(self.inner, sample_rate, fps, standard.to_raw(), flags)
+            raw::ltc_encoder_reinit(
+                self.inner_unsafe,
+                sample_rate,
+                fps,
+                standard.to_raw(),
+                flags,
+            )
         };
         if result == 0 {
             Ok(())
@@ -400,12 +406,12 @@ impl LTCEncoder {
 
     pub fn reset(&mut self) {
         unsafe {
-            raw::ltc_encoder_reset(self.inner);
+            raw::ltc_encoder_reset(self.inner_unsafe);
         }
     }
 
     pub fn set_bufsize(&mut self, sample_rate: f64, fps: f64) -> Result<(), LTCEncoderError> {
-        let result = unsafe { raw::ltc_encoder_set_bufsize(self.inner, sample_rate, fps) };
+        let result = unsafe { raw::ltc_encoder_set_bufsize(self.inner_unsafe, sample_rate, fps) };
         if result == 0 {
             Ok(())
         } else {
@@ -414,11 +420,11 @@ impl LTCEncoder {
     }
 
     pub fn get_volume(&self) -> f64 {
-        unsafe { raw::ltc_encoder_get_volume(self.inner) }
+        unsafe { raw::ltc_encoder_get_volume(self.inner_unsafe) }
     }
 
     pub fn set_volume(&mut self, dbfs: f64) -> Result<(), LTCEncoderError> {
-        let result = unsafe { raw::ltc_encoder_set_volume(self.inner, dbfs) };
+        let result = unsafe { raw::ltc_encoder_set_volume(self.inner_unsafe, dbfs) };
         if result == 0 {
             Ok(())
         } else {
@@ -427,17 +433,17 @@ impl LTCEncoder {
     }
 
     pub fn get_filter(&self) -> f64 {
-        unsafe { raw::ltc_encoder_get_filter(self.inner) }
+        unsafe { raw::ltc_encoder_get_filter(self.inner_unsafe) }
     }
 
     pub fn set_filter(&mut self, rise_time: f64) {
         unsafe {
-            raw::ltc_encoder_set_filter(self.inner, rise_time);
+            raw::ltc_encoder_set_filter(self.inner_unsafe, rise_time);
         }
     }
 
     pub fn encode_byte(&mut self, byte: i32, speed: f64) -> Result<(), LTCEncoderError> {
-        let result = unsafe { raw::ltc_encoder_encode_byte(self.inner, byte, speed) };
+        let result = unsafe { raw::ltc_encoder_encode_byte(self.inner_unsafe, byte, speed) };
         if result == 0 {
             Ok(())
         } else {
@@ -446,7 +452,7 @@ impl LTCEncoder {
     }
 
     pub fn end_encode(&mut self) -> Result<(), LTCEncoderError> {
-        let result = unsafe { raw::ltc_encoder_end_encode(self.inner) };
+        let result = unsafe { raw::ltc_encoder_end_encode(self.inner_unsafe) };
         if result == 0 {
             Ok(())
         } else {
@@ -456,32 +462,40 @@ impl LTCEncoder {
 
     pub fn encode_frame(&mut self) {
         unsafe {
-            raw::ltc_encoder_encode_frame(self.inner);
+            raw::ltc_encoder_encode_frame(self.inner_unsafe);
         }
     }
 
     pub fn encode_reversed_frame(&mut self) {
         unsafe {
-            raw::ltc_encoder_encode_reversed_frame(self.inner);
+            raw::ltc_encoder_encode_reversed_frame(self.inner_unsafe);
+        }
+    }
+}
+
+impl From<LTCTVStandard> for raw::LTC_TV_STANDARD {
+    fn from(val: LTCTVStandard) -> Self {
+        match val {
+            LTCTVStandard::LTCTV_525_60 => raw::LTC_TV_STANDARD_LTC_TV_525_60,
+            LTCTVStandard::LTCTV_625_50 => raw::LTC_TV_STANDARD_LTC_TV_625_50,
+            LTCTVStandard::LTCTV_1125_60 => raw::LTC_TV_STANDARD_LTC_TV_1125_60,
+            LTCTVStandard::LTCTV_FILM_24 => raw::LTC_TV_STANDARD_LTC_TV_FILM_24,
         }
     }
 }
 
 impl LTCTVStandard {
+    // I like the name better than simply `into()`
+    // TODO: make this a trait and implement it for everything
     pub(crate) fn to_raw(self) -> raw::LTC_TV_STANDARD {
-        match self {
-            LTCTVStandard::LTCTV_525_60 => raw::LTC_TV_STANDARD::LTC_TV_525_60,
-            LTCTVStandard::LTCTV_625_50 => raw::LTC_TV_STANDARD::LTC_TV_625_50,
-            LTCTVStandard::LTCTV_1125_60 => raw::LTC_TV_STANDARD::LTC_TV_1125_60,
-            LTCTVStandard::LTCTV_FILM_24 => raw::LTC_TV_STANDARD::LTC_TV_FILM_24,
-        }
+        self.into()
     }
 }
 
 impl Drop for LTCEncoder {
     fn drop(&mut self) {
         unsafe {
-            raw::ltc_encoder_free(self.inner);
+            raw::ltc_encoder_free(self.inner_unsafe);
         }
     }
 }
@@ -489,7 +503,9 @@ impl Drop for LTCEncoder {
 impl Drop for LTCDecoder {
     fn drop(&mut self) {
         unsafe {
-            raw::ltc_decoder_free(self.inner);
+            raw::ltc_decoder_free(self.inner_unsafe);
         }
     }
 }
+// TODO: impl  Frame
+// TODO: impl Timecode methdods for accessing fields and creating
