@@ -1,6 +1,5 @@
 extern crate libc;
 
-use libc::{c_double, c_int};
 use libltc_rs::{LTCEncoder, LTCFrame, LTCTVStandard, SMPTETimecode};
 use std::time::{Duration, Instant};
 
@@ -32,17 +31,7 @@ fn main() {
 
     let timezone: [u8; 6] = b"+00100".to_owned();
     // Set an initial timecode
-    let initial_timecode = SMPTETimecode {
-        timezone,
-        years: 8,
-        months: 12,
-        days: 31,
-        hours: 23,
-        mins: 59,
-        secs: 59,
-        frame: 0,
-    };
-
+    let initial_timecode = SMPTETimecode::default();
     encoder.set_timecode(&initial_timecode);
 
     // Prepare to encode a sequence of frames
