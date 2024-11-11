@@ -3,6 +3,8 @@ pub mod decoder;
 pub mod encoder;
 pub mod frame;
 
+use std::fmt::Display;
+
 use crate::error;
 use crate::raw;
 pub use error::{LTCDecoderError, LTCEncoderError};
@@ -11,6 +13,24 @@ use raw::ltcsnd_sample_t;
 #[derive(Debug)]
 pub struct SMPTETimecode {
     inner_unsafe_ptr: *mut raw::SMPTETimecode,
+}
+
+impl Display for SMPTETimecode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let timezone = self.timezone();
+        let years = self.years();
+        let months = self.months();
+        let days = self.days();
+        let hours = self.hours();
+        let minutes = self.minutes();
+        let seconds = self.seconds();
+        let frame = self.frame();
+        write!(
+            f,
+            "{} {:02}:{:02}:{:02}:{:02}:{:02}:{:02}:{:02}",
+            timezone, years, months, days, hours, minutes, seconds, frame
+        )
+    }
 }
 
 // SAFETY: We are allocating the pointer as a Box so it outlives the function
@@ -36,10 +56,11 @@ impl Drop for SMPTETimecode {
         }
     }
 }
+
 impl SMPTETimecode {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        timezone: [i8; 6],
+        timezone: Timezone,
         years: u8,
         months: u8,
         days: u8,
@@ -50,7 +71,7 @@ impl SMPTETimecode {
     ) -> Self {
         // Allocate the `raw::SMPTETimecode` on the heap using Box
         let boxed_inner = Box::new(raw::SMPTETimecode {
-            timezone,
+            timezone: timezone.to_raw(),
             years,
             months,
             days,
@@ -65,8 +86,8 @@ impl SMPTETimecode {
             inner_unsafe_ptr: Box::into_raw(boxed_inner),
         }
     }
-    pub fn timezone(&self) -> [i8; 6] {
-        unsafe { (*self.inner_unsafe_ptr).timezone }
+    pub fn timezone(&self) -> Timezone {
+        unsafe { (*self.inner_unsafe_ptr).timezone }.into()
     }
     pub fn years(&self) -> u8 {
         unsafe { (*self.inner_unsafe_ptr).years }
@@ -88,6 +109,54 @@ impl SMPTETimecode {
     }
     pub fn frame(&self) -> u8 {
         unsafe { (*self.inner_unsafe_ptr).frame }
+    }
+}
+
+pub struct Timezone([i8; 6]);
+
+impl Display for Timezone {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let timezone = self.0;
+        write!(
+            f,
+            "{:03}{:02}",
+            timezone[0] * 100 + timezone[1],
+            timezone[2] * 10 + timezone[3]
+        )
+    }
+}
+
+impl From<&[i8; 6]> for Timezone {
+    fn from(timezone: &[i8; 6]) -> Self {
+        Timezone(timezone.to_owned())
+    }
+}
+
+impl From<&[u8; 6]> for Timezone {
+    fn from(timezone: &[u8; 6]) -> Self {
+        Timezone(timezone.map(|x| x as i8))
+    }
+}
+
+impl From<[i8; 6]> for Timezone {
+    fn from(timezone: [i8; 6]) -> Self {
+        Timezone(timezone)
+    }
+}
+
+impl From<[u8; 6]> for Timezone {
+    fn from(timezone: [u8; 6]) -> Self {
+        Timezone(timezone.map(|x| x as i8))
+    }
+}
+
+impl Timezone {
+    pub fn new(timezone: [i8; 6]) -> Self {
+        Timezone(timezone)
+    }
+
+    pub fn to_raw(&self) -> [i8; 6] {
+        self.0
     }
 }
 
