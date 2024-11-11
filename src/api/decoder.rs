@@ -75,7 +75,7 @@ impl LTCDecoder {
         }
     }
 
-    pub fn write_s16(&mut self, buf: &[i16], posinfo: i64) {
+    pub fn write_i16(&mut self, buf: &[i16], posinfo: i64) {
         // SAFETY: We own self. buf is only read.
         unsafe {
             // SAFETY: we can cast *const SampleType as *mut SampleType to accomodate for the C function
