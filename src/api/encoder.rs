@@ -192,7 +192,7 @@ impl<'a> LTCEncoder {
         }
     }
 
-    pub fn set_bufsize(&mut self, sample_rate: f64, fps: f64) -> Result<(), LTCEncoderError> {
+    pub fn set_buffersize(&mut self, sample_rate: f64, fps: f64) -> Result<(), LTCEncoderError> {
         let result =
             unsafe { raw::ltc_encoder_set_buffersize(self.inner_unsafe_ptr, sample_rate, fps) };
         if result == 0 {
@@ -253,5 +253,56 @@ impl<'a> LTCEncoder {
         unsafe {
             raw::ltc_encoder_encode_reversed_frame(self.inner_unsafe_ptr);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::consts::{LtcBgFlags, LtcBgFlagsKind};
+
+    use super::*;
+    #[test]
+    fn test_encoder_volume() {
+        let mut encoder = LTCEncoder::try_new(
+            48_000.0,
+            25.0,
+            LTCTVStandard::LTCTV_625_50,
+            *LtcBgFlags::default().set(LtcBgFlagsKind::LTC_USE_DATE),
+        )
+        .unwrap();
+        assert!(encoder.set_volume(-18.0).is_ok());
+        // We need to account for floating point rounding errors
+        const FLOAT_ERROR: f64 = 0.001;
+        assert!(
+            encoder.get_volume() < -18.0 + FLOAT_ERROR
+                || encoder.get_volume() > -18.0 - FLOAT_ERROR
+        );
+        assert!(encoder.set_volume(1.0).is_err());
+    }
+
+    #[test]
+    fn test_encoder_reinit() {
+        let mut encoder =
+            LTCEncoder::try_new(48_000.0, 25.0, LTCTVStandard::LTCTV_525_60, 0.into()).unwrap();
+        assert_eq!(encoder.get_buffersize(), 1921);
+
+        // The buffersize calculation is:
+        // size_t bufsize = 1 + ceil(sample_rate / fps);
+
+        // We explicitly set the buffersize to the appropiate value
+        // which means the reinit wont fail
+        encoder.set_buffersize(192_000.0, 25.0).unwrap();
+        assert_eq!(encoder.get_buffersize(), 7681);
+        assert!(encoder
+            .reinit(192_000.0, 25.0, LTCTVStandard::LTCTV_525_60, 0.into())
+            .is_ok());
+
+        // Now the buffersize should be smaller because the fps are higher
+        // we deliberately set the wrong number of frames to cause an error
+        encoder.set_buffersize(192_000.0, 30.0).unwrap();
+        assert_eq!(encoder.get_buffersize(), 6401);
+        assert!(encoder
+            .reinit(192_000.0, 25.0, LTCTVStandard::LTCTV_525_60, 0.into())
+            .is_err());
     }
 }
