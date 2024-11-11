@@ -8,6 +8,3 @@ mod error;
 mod raw;
 
 pub use api::*;
-
-// TODO: impl  Frame
-// TODO: impl Timecode methdods for accessing fields and creating

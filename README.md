@@ -12,6 +12,21 @@ If the library is not found, make sure to set the right `LD_LIBRARY_PATH`:
 export LD_LIBRARY_PATH=/usr/local/lib 
 ```
 
+## Tips on debugging memory leaks
+
+Make sure to be clear on where raw pointers get deallocated. Either by the
+library (ltc_encoder_free, which also frees it's internal buffer), or by the borrow checker (i.e. LTCFrame::drop). 
+
+Make sure that all the references reflect the ownership semantics of the
+underlying library. The C codebase does not use `const *` so everything is
+technically a `*mut`. Refer to the original library's documentation and code to
+figure out the actual ownership.
+
+
+```bash
+valgrind ./target/debug/examples/simple
+```
+
 ## LICENSE
 
 I believe the terms of the original license (LGPG) allow for this project to be

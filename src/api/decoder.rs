@@ -8,6 +8,14 @@ pub struct LTCDecoder {
     inner_unsafe_ptr: *mut raw::LTCDecoder,
 }
 
+impl Drop for LTCDecoder {
+    fn drop(&mut self) {
+        unsafe {
+            raw::ltc_decoder_free(self.inner_unsafe_ptr);
+        }
+    }
+}
+
 impl LTCDecoder {
     pub fn try_new(apv: i32, queue_size: i32) -> Result<Self, LTCDecoderError> {
         // Safety: the C function does not modify memory, it only allocates memory. Drop is
@@ -98,6 +106,7 @@ impl LTCDecoder {
     }
 
     pub fn read(&self) -> Option<LTCFrameExt> {
+        // SAFE: The LTCFrameExt is allocated in a box so it outlives the function
         let mut frame = LTCFrameExt::default();
 
         // SAFETY: We own frame. The function is assumed to only read from self and write to frame
@@ -122,13 +131,5 @@ impl LTCDecoder {
     pub fn queue_length(&self) -> i32 {
         // SAFETY: The function is assumed to only read self
         unsafe { raw::ltc_decoder_queue_length(self.inner_unsafe_ptr) }
-    }
-}
-
-impl Drop for LTCDecoder {
-    fn drop(&mut self) {
-        unsafe {
-            raw::ltc_decoder_free(self.inner_unsafe_ptr);
-        }
     }
 }

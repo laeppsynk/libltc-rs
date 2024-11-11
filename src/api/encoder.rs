@@ -12,16 +12,24 @@ pub struct LTCEncoder {
     inner_unsafe_ptr: *mut raw::LTCEncoder,
 }
 
+impl Drop for LTCEncoder {
+    fn drop(&mut self) {
+        unsafe {
+            raw::ltc_encoder_free(self.inner_unsafe_ptr);
+        }
+    }
+}
+
 impl<'a> LTCEncoder {
     pub fn try_new(
         sample_rate: f64,
         fps: f64,
         standard: LTCTVStandard,
-        flags: i32,
+        flags: crate::consts::LtcBgFlags,
     ) -> Result<Self, LTCEncoderError> {
-        let raw_standard = standard.to_raw();
         // Safety: the C function does not modify memory, it only allocates memory. Drop is implemented for LTCEncoder
-        let encoder = unsafe { raw::ltc_encoder_create(sample_rate, fps, raw_standard, flags) };
+        let encoder =
+            unsafe { raw::ltc_encoder_create(sample_rate, fps, standard.to_raw(), flags as i32) };
         if encoder.is_null() {
             Err(LTCEncoderError::CreateError)
         } else {
@@ -31,6 +39,7 @@ impl<'a> LTCEncoder {
         }
     }
 
+    // TODO: this might be incorrect
     pub fn set_timecode(&mut self, timecode: &SMPTETimecode) {
         // Safety: We own self, the function is assumed to only read the timecode and write to self
         unsafe {
@@ -91,10 +100,11 @@ impl<'a> LTCEncoder {
     }
 
     // TODO: Possible leak? does ptr ever get deallocated - maybe when the encoder is deallocated?
-    pub fn get_buf_ref(&self, flush: bool) -> (&'a [SampleType], usize) {
+    pub fn get_buf_ref(&'a self, flush: bool) -> (&'a [SampleType], usize) {
+        // SAFETY: The buffer (pointed at by ptr) outlives the function as it has the same
+        // lifetime as self
         let mut ptr = std::ptr::null_mut();
-        // SAFETY: we own size.
-        // Self is assumed to only be read - for the buffersize
+        // SAFETY: Self is assumed to only be read - for the buffersize
         let size = unsafe {
             raw::ltc_encoder_get_bufferptr(
                 self.inner_unsafe_ptr,
@@ -110,10 +120,11 @@ impl<'a> LTCEncoder {
     }
 
     // TODO: Possible leak? does ptr ever get deallocated - maybe when the encoder is deallocated?
-    pub fn get_buf_ref_mut(&mut self, flush: bool) -> (&mut [SampleType], usize) {
+    pub fn get_buf_ref_mut(&'a mut self, flush: bool) -> (&'a mut [SampleType], usize) {
+        // SAFETY: The buffer (pointed at by ptr) outlives the function as it has the same
+        // lifetime as self
         let mut ptr = std::ptr::null_mut();
-        // SAFETY: we own size.
-        // Self is assumed to only be read - for the buffersize
+        // SAFETY: Self is assumed to only be read - for the buffersize
         let size = unsafe {
             raw::ltc_encoder_get_bufferptr(
                 self.inner_unsafe_ptr,
@@ -143,7 +154,7 @@ impl<'a> LTCEncoder {
         sample_rate: f64,
         fps: f64,
         standard: LTCTVStandard,
-        flags: i32,
+        flags: crate::consts::LtcBgFlags,
     ) -> Result<(), LTCEncoderError> {
         let result = unsafe {
             raw::ltc_encoder_reinit(
@@ -151,7 +162,7 @@ impl<'a> LTCEncoder {
                 sample_rate,
                 fps,
                 standard.to_raw(),
-                flags,
+                flags as i32,
             )
         };
         if result == 0 {
@@ -227,14 +238,6 @@ impl<'a> LTCEncoder {
     pub fn encode_reversed_frame(&mut self) {
         unsafe {
             raw::ltc_encoder_encode_reversed_frame(self.inner_unsafe_ptr);
-        }
-    }
-}
-
-impl Drop for LTCEncoder {
-    fn drop(&mut self) {
-        unsafe {
-            raw::ltc_encoder_free(self.inner_unsafe_ptr);
         }
     }
 }
