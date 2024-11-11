@@ -1,5 +1,5 @@
 use super::frame::LTCFrameExt;
-use super::SampleType;
+use crate::consts::SampleType;
 use crate::error::LTCDecoderError;
 
 use crate::raw;

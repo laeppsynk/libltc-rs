@@ -9,7 +9,6 @@ use crate::error;
 use crate::error::TimecodeError;
 use crate::raw;
 pub use error::{LTCDecoderError, LTCEncoderError};
-use raw::ltcsnd_sample_t;
 
 #[derive(Debug)]
 pub struct SMPTETimecode {
@@ -25,14 +24,11 @@ pub enum TimecodeWasWrapped {
 impl TryInto<TimecodeWasWrapped> for i32 {
     type Error = TimecodeError;
     fn try_into(self) -> Result<TimecodeWasWrapped, Self::Error> {
-        fun_name(self)
-    }
-}
-fn fun_name(timecode_was_wrapped: i32) -> Result<TimecodeWasWrapped, TimecodeError> {
-    match timecode_was_wrapped {
-        0 => Ok(TimecodeWasWrapped::No),
-        1 => Ok(TimecodeWasWrapped::Yes),
-        _ => Err(TimecodeError::InvalidReturn),
+        match self {
+            0 => Ok(TimecodeWasWrapped::No),
+            1 => Ok(TimecodeWasWrapped::Yes),
+            _ => Err(TimecodeError::InvalidReturn),
+        }
     }
 }
 
@@ -182,15 +178,15 @@ impl Timezone {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Copy, Clone)]
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, Default)]
 pub enum LTCTVStandard {
-    LTCTV_525_60,  // 30fps
+    #[default]
+    LTCTV_525_60 = 0, // 30fps
     LTCTV_625_50,  // 25fps
     LTCTV_1125_60, // 30fps
     LTCTV_FILM_24, // 24fps
 }
-
-type SampleType = ltcsnd_sample_t;
 
 impl From<LTCTVStandard> for raw::LTC_TV_STANDARD {
     fn from(val: LTCTVStandard) -> Self {

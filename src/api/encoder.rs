@@ -3,7 +3,7 @@ use core::slice;
 use super::frame::LTCFrame;
 use super::LTCTVStandard;
 use super::SMPTETimecode;
-use super::SampleType;
+use crate::consts::SampleType;
 use crate::error::LTCEncoderError;
 use crate::error::TimecodeError;
 use crate::raw;

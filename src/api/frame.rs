@@ -2,6 +2,7 @@ use super::LTCTVStandard;
 use super::SMPTETimecode;
 use crate::consts;
 use crate::consts::LtcBgFlags;
+use crate::consts::SampleType;
 use crate::error::TimecodeError;
 use crate::raw;
 use crate::TimecodeWasWrapped;
@@ -11,9 +12,80 @@ pub struct LTCFrame {
     pub(super) inner_unsafe_ptr: *mut raw::LTCFrame,
 }
 
+impl LTCFrame {
+    pub fn dfbit(&self) -> u32 {
+        unsafe { *self.inner_unsafe_ptr }.dfbit()
+    }
+}
+
 #[derive(Debug)]
 pub struct LTCFrameExt {
     pub(super) inner_unsafe_ptr: *mut raw::LTCFrameExt,
+}
+
+impl LTCFrameExt {
+    // SAFETY: this is safe because we own the pointer
+    pub fn ltc(self) -> LTCFrame {
+        LTCFrame {
+            inner_unsafe_ptr: unsafe { &mut (*self.inner_unsafe_ptr).ltc },
+        }
+    }
+    pub fn off_start(&self) -> i64 {
+        unsafe { *self.inner_unsafe_ptr }.off_start
+    }
+    pub fn set_off_start(&self, off_start: i64) {
+        unsafe {
+            (*self.inner_unsafe_ptr).off_start = off_start;
+        }
+    }
+    pub fn off_end(&self) -> i64 {
+        unsafe { *self.inner_unsafe_ptr }.off_end
+    }
+    pub fn set_off_end(&self, off_end: i64) {
+        unsafe {
+            (*self.inner_unsafe_ptr).off_end = off_end;
+        }
+    }
+    pub fn reverse(&self) -> bool {
+        unsafe { *self.inner_unsafe_ptr }.reverse != 0
+    }
+    pub fn set_reverse(&self, reverse: bool) {
+        unsafe {
+            (*self.inner_unsafe_ptr).reverse = if reverse { 1 } else { 0 };
+        }
+    }
+    pub fn biphase_tics(&self) -> [f32; 80usize] {
+        unsafe { *self.inner_unsafe_ptr }.biphase_tics
+    }
+    pub fn set_biphase_tics(&self, biphase_tics: [f32; 80usize]) {
+        unsafe {
+            (*self.inner_unsafe_ptr).biphase_tics = biphase_tics;
+        }
+    }
+    pub fn sample_min(&self) -> SampleType {
+        unsafe { *self.inner_unsafe_ptr }.sample_min
+    }
+    pub fn set_sample_min(&self, sample_min: SampleType) {
+        unsafe {
+            (*self.inner_unsafe_ptr).sample_min = sample_min;
+        }
+    }
+    pub fn sample_max(&self) -> SampleType {
+        unsafe { *self.inner_unsafe_ptr }.sample_max
+    }
+    pub fn set_sample_max(&self, sample_max: SampleType) {
+        unsafe {
+            (*self.inner_unsafe_ptr).sample_max = sample_max;
+        }
+    }
+    pub fn volume(&self) -> f64 {
+        unsafe { *self.inner_unsafe_ptr }.volume
+    }
+    pub fn set_volume(&self, volume: f64) {
+        unsafe {
+            (*self.inner_unsafe_ptr).volume = volume;
+        }
+    }
 }
 
 // SAFETY: We are allocating the pointer as a Box so it outlives the function

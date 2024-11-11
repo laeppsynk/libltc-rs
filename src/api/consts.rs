@@ -14,6 +14,7 @@ pub const LIBLTC_REV: u32 = raw::LIBLTC_REV;
 pub const LIBLTC_AGE: u32 = raw::LIBLTC_AGE;
 pub const LTC_FRAME_BIT_COUNT: u32 = raw::LTC_FRAME_BIT_COUNT;
 pub type WcharT = raw::wchar_t;
+pub type SampleType = raw::ltcsnd_sample_t;
 
 #[repr(u32)]
 #[derive(Debug, Copy, Clone)]
