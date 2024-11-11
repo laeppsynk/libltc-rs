@@ -6,6 +6,7 @@ pub mod frame;
 use std::fmt::Display;
 
 use crate::error;
+use crate::error::TimecodeError;
 use crate::raw;
 pub use error::{LTCDecoderError, LTCEncoderError};
 use raw::ltcsnd_sample_t;
@@ -13,6 +14,26 @@ use raw::ltcsnd_sample_t;
 #[derive(Debug)]
 pub struct SMPTETimecode {
     inner_unsafe_ptr: *mut raw::SMPTETimecode,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum TimecodeWasWrapped {
+    No = 0,
+    Yes = 1,
+}
+
+impl TryInto<TimecodeWasWrapped> for i32 {
+    type Error = TimecodeError;
+    fn try_into(self) -> Result<TimecodeWasWrapped, Self::Error> {
+        fun_name(self)
+    }
+}
+fn fun_name(timecode_was_wrapped: i32) -> Result<TimecodeWasWrapped, TimecodeError> {
+    match timecode_was_wrapped {
+        0 => Ok(TimecodeWasWrapped::No),
+        1 => Ok(TimecodeWasWrapped::Yes),
+        _ => Err(TimecodeError::InvalidReturn),
+    }
 }
 
 impl Display for SMPTETimecode {

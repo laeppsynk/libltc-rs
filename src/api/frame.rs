@@ -1,6 +1,10 @@
 use super::LTCTVStandard;
 use super::SMPTETimecode;
+use crate::consts;
+use crate::consts::LtcBgFlags;
+use crate::error::TimecodeError;
 use crate::raw;
+use crate::TimecodeWasWrapped;
 
 #[derive(Debug)]
 pub struct LTCFrame {
@@ -74,7 +78,7 @@ impl LTCFrame {
         frame
     }
 
-    pub fn to_timecode(&self, flags: crate::consts::LtcBgFlags) -> SMPTETimecode {
+    pub fn to_timecode(&self, flags: consts::LtcBgFlags) -> SMPTETimecode {
         let mut timecode = SMPTETimecode::default();
 
         // SAFETY: We own timecode. The function is assumed to only read the frame.
@@ -83,7 +87,7 @@ impl LTCFrame {
             raw::ltc_frame_to_time(
                 (&mut timecode).inner_unsafe_ptr,
                 self.inner_unsafe_ptr,
-                flags as i32,
+                flags.into(),
             );
         }
 
@@ -93,7 +97,7 @@ impl LTCFrame {
     pub fn from_timecode(
         timecode: &SMPTETimecode,
         standard: LTCTVStandard,
-        flags: crate::consts::LtcBgFlags,
+        flags: consts::LtcBgFlags,
     ) -> Self {
         let mut frame = Self::new();
 
@@ -104,7 +108,7 @@ impl LTCFrame {
                 (&mut frame).inner_unsafe_ptr,
                 timecode.inner_unsafe_ptr,
                 standard.to_raw(),
-                flags as i32,
+                flags.into(),
             );
         }
 
@@ -115,7 +119,7 @@ impl LTCFrame {
         &mut self,
         timecode: &SMPTETimecode,
         standard: LTCTVStandard,
-        flags: crate::consts::LtcBgFlags,
+        flags: consts::LtcBgFlags,
     ) {
         // SAFETY: We own frame. The function is assumed to only read the timecode.
         unsafe {
@@ -124,7 +128,7 @@ impl LTCFrame {
                 self.inner_unsafe_ptr,
                 timecode.inner_unsafe_ptr,
                 standard.to_raw(),
-                flags as i32,
+                flags.into(),
             );
         }
     }
@@ -133,12 +137,16 @@ impl LTCFrame {
         &mut self,
         fps: i32,
         standard: LTCTVStandard,
-        flags: crate::consts::LtcBgFlags,
-    ) -> bool {
+        flags: LtcBgFlags,
+    ) -> Result<TimecodeWasWrapped, TimecodeError> {
         // SAFETY: We own self
-        unsafe {
-            raw::ltc_frame_increment(self.inner_unsafe_ptr, fps, standard.to_raw(), flags as i32)
-                != 0
+        let timecode_was_wrapped = unsafe {
+            raw::ltc_frame_increment(self.inner_unsafe_ptr, fps, standard.to_raw(), flags.into())
+        };
+        match timecode_was_wrapped {
+            0 => Ok(TimecodeWasWrapped::No),
+            1 => Ok(TimecodeWasWrapped::Yes),
+            _ => Err(TimecodeError::InvalidReturn),
         }
     }
 
@@ -146,12 +154,16 @@ impl LTCFrame {
         &mut self,
         fps: i32,
         standard: LTCTVStandard,
-        flags: crate::consts::LtcBgFlags,
-    ) -> bool {
+        flags: LtcBgFlags,
+    ) -> Result<TimecodeWasWrapped, TimecodeError> {
         // SAFETY: We own self
-        unsafe {
-            raw::ltc_frame_decrement(self.inner_unsafe_ptr, fps, standard.to_raw(), flags as i32)
-                != 0
+        let timecode_was_wrapped = unsafe {
+            raw::ltc_frame_decrement(self.inner_unsafe_ptr, fps, standard.to_raw(), flags.into())
+        };
+        match timecode_was_wrapped {
+            0 => Ok(TimecodeWasWrapped::No),
+            1 => Ok(TimecodeWasWrapped::Yes),
+            _ => Err(TimecodeError::InvalidReturn),
         }
     }
 
@@ -162,9 +174,9 @@ impl LTCFrame {
         }
     }
 
-    pub fn parse_bcg_flags(&self, standard: LTCTVStandard) -> i32 {
+    pub fn parse_bcg_flags(&self, standard: LTCTVStandard) -> LtcBgFlags {
         // SAFETY: The function is assumed to only read self (the frame)
-        unsafe { raw::ltc_frame_parse_bcg_flags(self.inner_unsafe_ptr, standard.to_raw()) }
+        unsafe { raw::ltc_frame_parse_bcg_flags(self.inner_unsafe_ptr, standard.to_raw()) }.into()
     }
 
     pub fn get_user_bits(&self) -> u32 {

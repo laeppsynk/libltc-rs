@@ -1,8 +1,10 @@
 extern crate libc;
 
 use libltc_rs::{
-    consts::LtcBgFlags, encoder::LTCEncoder, frame::LTCFrame, LTCTVStandard, SMPTETimecode,
-    Timezone,
+    consts::{LtcBgFlags, LtcBgFlagsKind},
+    encoder::LTCEncoder,
+    frame::LTCFrame,
+    LTCTVStandard, SMPTETimecode, Timezone,
 };
 use std::time::{Duration, Instant};
 
@@ -10,7 +12,7 @@ fn main() {
     let sample_rate = 48000.0;
     let fps = 30.0;
     let standard = LTCTVStandard::LTCTV_525_60;
-    let flags = LtcBgFlags::LTC_USE_DATE;
+    let flags = *LtcBgFlags::default().set(LtcBgFlagsKind::LTC_USE_DATE);
 
     let mut encoder = match LTCEncoder::try_new(sample_rate, fps, standard, flags) {
         Ok(encoder) => encoder,
@@ -48,7 +50,7 @@ fn main() {
             timecode_to_string(&encoder.get_timecode())
         );
         std::thread::sleep(Duration::from_secs_f64(1.0 / fps));
-        encoder.inc_timecode();
+        encoder.inc_timecode().unwrap();
     }
 
     match encoder.end_encode() {

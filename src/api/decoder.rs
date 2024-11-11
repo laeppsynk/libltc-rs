@@ -10,9 +10,10 @@ pub struct LTCDecoder {
 
 impl Drop for LTCDecoder {
     fn drop(&mut self) {
-        unsafe {
-            raw::ltc_decoder_free(self.inner_unsafe_ptr);
-        }
+        let r = unsafe { raw::ltc_decoder_free(self.inner_unsafe_ptr) };
+        if r != 0 {
+            panic!("Error freeing LTCDecoder");
+        };
     }
 }
 

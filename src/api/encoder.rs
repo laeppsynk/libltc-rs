@@ -5,7 +5,9 @@ use super::LTCTVStandard;
 use super::SMPTETimecode;
 use super::SampleType;
 use crate::error::LTCEncoderError;
+use crate::error::TimecodeError;
 use crate::raw;
+use crate::TimecodeWasWrapped;
 
 #[derive(Debug)]
 pub struct LTCEncoder {
@@ -16,7 +18,7 @@ impl Drop for LTCEncoder {
     fn drop(&mut self) {
         unsafe {
             raw::ltc_encoder_free(self.inner_unsafe_ptr);
-        }
+        };
     }
 }
 
@@ -29,7 +31,7 @@ impl<'a> LTCEncoder {
     ) -> Result<Self, LTCEncoderError> {
         // Safety: the C function does not modify memory, it only allocates memory. Drop is implemented for LTCEncoder
         let encoder =
-            unsafe { raw::ltc_encoder_create(sample_rate, fps, standard.to_raw(), flags as i32) };
+            unsafe { raw::ltc_encoder_create(sample_rate, fps, standard.to_raw(), flags.into()) };
         if encoder.is_null() {
             Err(LTCEncoderError::CreateError)
         } else {
@@ -72,14 +74,18 @@ impl<'a> LTCEncoder {
         }
     }
 
-    pub fn inc_timecode(&mut self) -> bool {
+    pub fn inc_timecode(&mut self) -> Result<TimecodeWasWrapped, LTCEncoderError> {
         // SAFETY: We own self
-        unsafe { raw::ltc_encoder_inc_timecode(self.inner_unsafe_ptr) != 0 }
+        unsafe { raw::ltc_encoder_inc_timecode(self.inner_unsafe_ptr) }
+            .try_into()
+            .map_err(|e: TimecodeError| e.into())
     }
 
-    pub fn dec_timecode(&mut self) -> bool {
+    pub fn dec_timecode(&mut self) -> Result<TimecodeWasWrapped, LTCEncoderError> {
         // SAFETY: We own self
-        unsafe { raw::ltc_encoder_dec_timecode(self.inner_unsafe_ptr) != 0 }
+        unsafe { raw::ltc_encoder_dec_timecode(self.inner_unsafe_ptr) }
+            .try_into()
+            .map_err(|e: TimecodeError| e.into())
     }
 
     pub fn set_frame(&mut self, frame: &LTCFrame) {
@@ -170,7 +176,7 @@ impl<'a> LTCEncoder {
                 sample_rate,
                 fps,
                 standard.to_raw(),
-                flags as i32,
+                flags.into(),
             )
         };
         if result == 0 {
