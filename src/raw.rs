@@ -1,3 +1,7 @@
+#![allow(non_upper_case_globals)]
+#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
+
 pub(crate) use autogen::*;
 
 // Several functions in this library are deprecated. We allow dead code to avoid warnings.
