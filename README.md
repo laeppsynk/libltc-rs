@@ -1,6 +1,9 @@
 # libltc-rs
 
-A rust wrapper for libltc.
+A thin rust wrapper for libltc.
+
+I tried my best to keep the API as close to the original as possible while
+encapsulating the borrow / move semantics of the original library. 
 
 ## Dependencies
 
