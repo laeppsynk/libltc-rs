@@ -57,6 +57,14 @@ impl<'a> LTCEncoder {
         timecode
     }
 
+    pub fn get_timecode_inplace(&self, timecode: &mut SMPTETimecode) {
+        // We own timecode, the function is assumed to only read from self and write to timecode
+        unsafe {
+            #[allow(clippy::needless_borrow)] // for clarity
+            raw::ltc_encoder_get_timecode(self.inner_unsafe_ptr, timecode.inner_unsafe_ptr);
+        }
+    }
+
     pub fn set_user_bits(&mut self, data: u32) {
         // SAFETY: We own self
         unsafe {

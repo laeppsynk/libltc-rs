@@ -39,18 +39,20 @@ fn main() {
     let duration = Duration::new(2, 0); // 10 seconds
     let start_time = Instant::now();
 
+    let mut frame = LTCFrame::new();
+
     while start_time.elapsed() < duration {
         // Get the next frame's timecode
         let timecode = encoder.get_timecode();
         // Set the current frame
-        let frame = LTCFrame::from_timecode(&timecode, standard, flags);
+        LTCFrame::from_timecode_inplace(&mut frame, &timecode, standard, flags);
         encoder.set_frame(&frame);
         // Encode the frame
         encoder.encode_frame();
 
         // Print the current timecode
         println!(
-            "Current timecode: {:}",
+            "Current timecode gotten: {:}",
             timecode_to_string(&encoder.get_timecode())
         );
 

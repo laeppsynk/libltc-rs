@@ -111,6 +111,24 @@ impl LTCFrame {
         frame
     }
 
+    pub fn from_timecode_inplace(
+        &mut self,
+        timecode: &SMPTETimecode,
+        standard: LTCTVStandard,
+        flags: crate::consts::LtcBgFlags,
+    ) {
+        // SAFETY: We own frame. The function is assumed to only read the timecode.
+        unsafe {
+            #[allow(clippy::needless_borrow)] // for clarity
+            raw::ltc_time_to_frame(
+                self.inner_unsafe_ptr,
+                timecode.inner_unsafe_ptr,
+                standard.to_raw(),
+                flags as i32,
+            );
+        }
+    }
+
     pub fn increment(
         &mut self,
         fps: i32,
