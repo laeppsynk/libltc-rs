@@ -1,13 +1,18 @@
 # libltc-rs
 
-A thin rust wrapper for libltc.
+A thin rust wrapper for [libltc](https://github.com/x42/libltc) by x42.
 
 I tried my best to keep the API as close to the original as possible while
-encapsulating the borrow / move semantics of the original library. 
+encapsulating the borrow / move semantics of the original library.
 
 ## Dependencies
 
-Download and compile libltc's fork from [druskus20/libltc](https://github.com/druskus20/libltc).
+The current supported version of libltc is [1.3.2](https://github.com/x42/libltc/releases/tag/v1.3.2).
+
+```bash
+
+Support for higher than 8bit encoding is being considered, if it happens, it
+will be in my fork: [druskus20/libltc](https://github.com/druskus20/libltc). 
 
 If the library is not found, make sure to set the right `LD_LIBRARY_PATH`:
 
@@ -18,13 +23,13 @@ export LD_LIBRARY_PATH=/usr/local/lib
 ## Tips on debugging memory leaks
 
 Make sure to be clear on where raw pointers get deallocated. Either by the
-library (ltc_encoder_free, which also frees it's internal buffer), or by the borrow checker (i.e. LTCFrame::drop). 
+library (ltc_encoder_free, which also frees it's internal buffer), or by the
+borrow checker (i.e. LTCFrame::drop).
 
 Make sure that all the references reflect the ownership semantics of the
 underlying library. The C codebase does not use `const *` so everything is
 technically a `*mut`. Refer to the original library's documentation and code to
 figure out the actual ownership.
-
 
 ```bash
 valgrind ./target/debug/examples/simple
