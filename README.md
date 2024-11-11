@@ -9,8 +9,6 @@ encapsulating the borrow / move semantics of the original library.
 
 The current supported version of libltc is [1.3.2](https://github.com/x42/libltc/releases/tag/v1.3.2).
 
-```bash
-
 Support for higher than 8bit encoding is being considered, if it happens, it
 will be in my fork: [druskus20/libltc](https://github.com/druskus20/libltc). 
 
