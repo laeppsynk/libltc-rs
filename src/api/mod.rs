@@ -134,12 +134,12 @@ pub struct Timezone([i8; 6]);
 impl Display for Timezone {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let timezone = self.0;
-        write!(
-            f,
-            "{:03}{:02}",
-            timezone[0] * 100 + timezone[1],
-            timezone[2] * 10 + timezone[3]
-        )
+        let timezone_u8 = timezone
+            .into_iter()
+            .map(|x| x.try_into().unwrap())
+            .collect::<Vec<u8>>();
+        let timezone_str = std::str::from_utf8(&timezone_u8).unwrap();
+        write!(f, "{}", timezone_str)
     }
 }
 
