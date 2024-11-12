@@ -88,9 +88,10 @@ impl<'a> LTCEncoder {
             .map_err(|e: TimecodeError| e.into())
     }
 
-    pub fn set_frame(&mut self, frame: &LTCFrame) {
+    pub fn set_frame(&mut self, frame: LTCFrame) {
         // SAFETY: We own self, the function is assumed to only read the frame and write to self
-        unsafe { raw::ltc_encoder_set_frame(self.inner_unsafe_ptr, frame.inner_unsafe_ptr) }
+        let ptr = &frame.inner_raw as *const raw::LTCFrame;
+        unsafe { raw::ltc_encoder_set_frame(self.inner_unsafe_ptr, ptr as *mut raw::LTCFrame) }
     }
 
     pub fn get_frame(&self) -> LTCFrame {
@@ -98,7 +99,7 @@ impl<'a> LTCEncoder {
         // SAFETY: We own frame. The function is assumed to only read from self and write to frame
         unsafe {
             #[allow(clippy::needless_borrow)] // for clarity
-            raw::ltc_encoder_get_frame(self.inner_unsafe_ptr, (&mut frame).inner_unsafe_ptr);
+            raw::ltc_encoder_get_frame(self.inner_unsafe_ptr, &mut frame.inner_raw);
         }
         frame
     }

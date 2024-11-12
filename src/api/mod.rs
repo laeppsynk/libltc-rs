@@ -70,6 +70,7 @@ impl Drop for SMPTETimecode {
             unsafe {
                 let _ = Box::from_raw(self.inner_unsafe_ptr);
             }
+            self.inner_unsafe_ptr = std::ptr::null_mut();
         }
     }
 }
@@ -136,9 +137,8 @@ impl Display for Timezone {
         let timezone = self.0;
         write!(
             f,
-            "{:03}{:02}",
-            timezone[0] * 100 + timezone[1],
-            timezone[2] * 10 + timezone[3]
+            "{:03}:{:02}:{:02}:{:02}:{:02}:{:02}",
+            timezone[0], timezone[1], timezone[2], timezone[3], timezone[4], timezone[5]
         )
     }
 }

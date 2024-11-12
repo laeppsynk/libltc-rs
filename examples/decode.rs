@@ -60,10 +60,12 @@ fn main() {
 
         decoder.write(&sound[0..n], total);
 
-        while let Some(frame) = decoder.read() {
+        while let Some(frame_ext) = decoder.read() {
             let flags = *LtcBgFlags::default().set(LtcBgFlagsKind::LTC_USE_DATE);
+            let ltc = frame_ext.ltc_ref().to_owned();
+            let ltc_ref = frame_ext.ltc_ref();
             // FIX: There's a double free here. ltc() should maybe be a copy?
-            let stime = &frame.ltc().to_timecode(flags);
+            let stime = ltc.to_timecode(flags);
 
             // Print out the decoded timecode
             println!(
@@ -75,11 +77,11 @@ fn main() {
                 stime.hours(),
                 stime.minutes(),
                 stime.seconds(),
-                if frame.ltc().dfbit() == 1 { '.' } else { ':' },
+                ltc_ref.dfbit(),
                 stime.frame(),
-                frame.off_start(),
-                frame.off_end(),
-                if frame.reverse() { "  R" } else { "" }
+                frame_ext.off_start(),
+                frame_ext.off_end(),
+                if frame_ext.reverse() { "  R" } else { "" }
             );
         }
 
