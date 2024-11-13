@@ -1,3 +1,5 @@
+use std::error::Error;
+
 // error.rs
 #[derive(Debug)]
 pub enum LTCEncoderError {
@@ -19,6 +21,10 @@ pub enum LTCDecoderError {
 pub enum TimecodeError {
     InvalidReturn,
 }
+
+impl Error for LTCEncoderError {}
+impl Error for LTCDecoderError {}
+impl Error for TimecodeError {}
 
 impl From<TimecodeError> for LTCEncoderError {
     fn from(e: TimecodeError) -> Self {
