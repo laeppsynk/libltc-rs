@@ -10,9 +10,17 @@ encapsulating the borrow / move semantics of the original library.
 The current supported version of libltc is [1.3.2](https://github.com/x42/libltc/releases/tag/v1.3.2).
 
 Support for higher than 8bit encoding is being considered, if it happens, it
-will be in my fork: [druskus20/libltc](https://github.com/druskus20/libltc). 
+will be in my fork: [druskus20/libltc](https://github.com/druskus20/libltc).
 
 If the library is not found, make sure to set the right `LD_LIBRARY_PATH`:
+
+## Running the examples
+
+```bash
+cargo run --example simple
+cargo run --example encode -- test.txt  # creates test.txt
+cargo run --example decode -- test.txt  # reads test.txt
+```
 
 ```bash
 export LD_LIBRARY_PATH=/usr/local/lib 
