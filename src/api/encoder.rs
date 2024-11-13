@@ -1,13 +1,14 @@
 use core::slice;
 
+use super::consts::LtcBgFlags;
 use super::frame::LTCFrame;
 use super::LTCTVStandard;
 use super::SMPTETimecode;
+use crate::api::TimecodeWasWrapped;
 use crate::consts::SampleType;
 use crate::error::LTCEncoderError;
 use crate::error::TimecodeError;
 use crate::raw;
-use crate::TimecodeWasWrapped;
 
 #[derive(Debug)]
 pub struct LTCEncoder {
@@ -22,16 +23,36 @@ impl Drop for LTCEncoder {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct LTCEncoderConfig {
+    pub sample_rate: f64,
+    pub fps: f64,
+    pub standard: LTCTVStandard,
+    pub flags: crate::consts::LtcBgFlags,
+}
+
+impl Default for LTCEncoderConfig {
+    fn default() -> Self {
+        LTCEncoderConfig {
+            sample_rate: 48_000.0,
+            fps: 25.0,
+            standard: LTCTVStandard::LTCTV_625_50,
+            flags: LtcBgFlags::default(),
+        }
+    }
+}
+
 impl<'a> LTCEncoder {
-    pub fn try_new(
-        sample_rate: f64,
-        fps: f64,
-        standard: LTCTVStandard,
-        flags: crate::consts::LtcBgFlags,
-    ) -> Result<Self, LTCEncoderError> {
+    pub fn try_new(config: &LTCEncoderConfig) -> Result<Self, LTCEncoderError> {
         // Safety: the C function does not modify memory, it only allocates memory. Drop is implemented for LTCEncoder
-        let encoder =
-            unsafe { raw::ltc_encoder_create(sample_rate, fps, standard.to_raw(), flags.into()) };
+        let encoder = unsafe {
+            raw::ltc_encoder_create(
+                config.sample_rate,
+                config.fps,
+                config.standard.to_raw(),
+                config.flags.into(),
+            )
+        };
         if encoder.is_null() {
             Err(LTCEncoderError::CreateError)
         } else {
@@ -264,14 +285,15 @@ mod tests {
     use super::*;
     #[test]
     fn test_encoder_volume() {
-        let mut encoder = LTCEncoder::try_new(
-            48_000.0,
-            25.0,
-            LTCTVStandard::LTCTV_625_50,
-            *LtcBgFlags::default().set(LtcBgFlagsKind::LTC_USE_DATE),
-        )
-        .unwrap();
+        let encoder_config = LTCEncoderConfig {
+            sample_rate: 48_000.0,
+            fps: 25.0,
+            standard: LTCTVStandard::LTCTV_625_50,
+            flags: LtcBgFlags::default(),
+        };
+        let mut encoder = LTCEncoder::try_new(&encoder_config).unwrap();
         assert!(encoder.set_volume(-18.0).is_ok());
+
         // We need to account for floating point rounding errors
         const FLOAT_ERROR: f64 = 0.001;
         assert!(
@@ -283,8 +305,13 @@ mod tests {
 
     #[test]
     fn test_encoder_reinit() {
-        let mut encoder =
-            LTCEncoder::try_new(48_000.0, 25.0, LTCTVStandard::LTCTV_525_60, 0.into()).unwrap();
+        let encoder_config = LTCEncoderConfig {
+            sample_rate: 48_000.0,
+            fps: 25.0,
+            standard: LTCTVStandard::LTCTV_625_50,
+            flags: LtcBgFlags::default(),
+        };
+        let mut encoder = LTCEncoder::try_new(&encoder_config).unwrap();
         assert_eq!(encoder.get_buffersize(), 1921);
 
         // The buffersize calculation is:

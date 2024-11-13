@@ -1,11 +1,11 @@
 use super::LTCTVStandard;
 use super::SMPTETimecode;
+use crate::api::TimecodeWasWrapped;
 use crate::consts;
 use crate::consts::LtcBgFlags;
 use crate::consts::SampleType;
 use crate::error::TimecodeError;
 use crate::raw;
-use crate::TimecodeWasWrapped;
 
 #[derive(Debug, Copy, Clone, Default)]
 pub struct LTCFrame {

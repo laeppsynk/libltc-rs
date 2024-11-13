@@ -1,9 +1,7 @@
 extern crate libc;
 
-use libltc_rs::{
-    consts::{LtcBgFlags, LtcBgFlagsKind, SampleType},
-    decoder::LTCDecoder,
-};
+use libltc_rs::api::decoder::LTCDecoder;
+use libltc_rs::consts::{LtcBgFlags, LtcBgFlagsKind, SampleType};
 use std::env;
 use std::fs::File;
 use std::io::{self, Read};

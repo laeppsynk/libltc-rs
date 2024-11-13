@@ -18,11 +18,26 @@ impl Drop for LTCDecoder {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct LTCDecoderConfig {
+    pub apv: i32,
+    pub queue_size: i32,
+}
+
+impl Default for LTCDecoderConfig {
+    fn default() -> Self {
+        LTCDecoderConfig {
+            apv: 1920,
+            queue_size: 32,
+        }
+    }
+}
+
 impl LTCDecoder {
-    pub fn try_new(apv: i32, queue_size: i32) -> Result<Self, LTCDecoderError> {
+    pub fn try_new(config: &LTCDecoderConfig) -> Result<Self, LTCDecoderError> {
         // Safety: the C function does not modify memory, it only allocates memory. Drop is
         // implemented for LTCDecoder
-        let decoder = unsafe { raw::ltc_decoder_create(apv, queue_size) };
+        let decoder = unsafe { raw::ltc_decoder_create(config.apv, config.queue_size) };
         if decoder.is_null() {
             Err(LTCDecoderError::CreateError)
         } else {
