@@ -43,7 +43,7 @@ valgrind ./target/debug/examples/simple
 
 ## LICENSE
 
-I believe the terms of the original license (LGPG) allow for this project to be
+I believe the terms of the original license (LGPL) allow for this project to be
 licensed under the MIT license, since it is a wrapper around the original
 library. The original library is required to be installed separately, and
 is dynamically linked by [build.rs](./build.rs).
@@ -61,3 +61,6 @@ From the [original project](https://x42.github.io/libltc/index.html):
 > and statically link your application against it, your project will have to be
 > licensed in terms of the LGPL or a compatible license. See the license text
 > for details and consult with a person with expertise in licensing.
+
+The examples are loosely based on the original and thus excluded from the cargo
+package and licensed under LGPL.
