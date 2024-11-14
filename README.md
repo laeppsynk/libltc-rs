@@ -14,6 +14,10 @@ will be in my fork: [druskus20/libltc](https://github.com/druskus20/libltc).
 
 If the library is not found, make sure to set the right `LD_LIBRARY_PATH`:
 
+```bash
+export LD_LIBRARY_PATH=/usr/local/lib 
+```
+
 ## Running the examples
 
 ```bash
@@ -22,9 +26,6 @@ cargo run --example encode -- test.txt  # creates test.txt
 cargo run --example decode -- test.txt  # reads test.txt
 ```
 
-```bash
-export LD_LIBRARY_PATH=/usr/local/lib 
-```
 
 ## Tips on debugging memory leaks
 
