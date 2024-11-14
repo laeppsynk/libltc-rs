@@ -20,7 +20,7 @@ fn main() {
 
     // Write the bindings to the $OUT_DIR/bindings.rs file.
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    build_print::println!("Bindings will be written to: {:?}", out_path);
+    //build_print::println!("Bindings will be written to: {:?}", out_path);
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
