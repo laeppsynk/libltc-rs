@@ -1,8 +1,12 @@
 [package]
 name = "libltc-rs"
+description = "Rust bindings for libltc"
+homepage = "https://github.com/laeppsynk/libltc-rs"
+repository = "https://github.com/laeppsynk/libltc-rs"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
+readme = "README.md"
 # Exclude the examples, they are licensedd under LGPL 
 exclude = ["/examples"]
 
