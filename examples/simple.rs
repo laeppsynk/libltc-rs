@@ -1,11 +1,6 @@
 extern crate libc;
 
-use libltc_rs::{
-    consts::{LtcBgFlags, LtcBgFlagsKind},
-    encoder::LTCEncoder,
-    frame::LTCFrame,
-    LTCTVStandard, SMPTETimecode, Timezone,
-};
+use libltc_rs::prelude::*;
 use std::time::{Duration, Instant};
 
 fn main() {
@@ -14,7 +9,13 @@ fn main() {
     let standard = LTCTVStandard::LTCTV_525_60;
     let flags = *LtcBgFlags::default().set(LtcBgFlagsKind::LTC_USE_DATE);
 
-    let mut encoder = match LTCEncoder::try_new(sample_rate, fps, standard, flags) {
+    let config = LTCEncoderConfig {
+        sample_rate,
+        fps,
+        standard,
+        flags,
+    };
+    let mut encoder = match LTCEncoder::try_new(&config) {
         Ok(encoder) => encoder,
         Err(e) => {
             eprintln!("Error creating LTC encoder: {}", e);

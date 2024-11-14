@@ -64,7 +64,6 @@ impl Default for SMPTETimecode {
 
 impl Drop for SMPTETimecode {
     fn drop(&mut self) {
-        dbg!("Dropping SMPTETimecode");
         if !self.inner_unsafe_ptr.is_null() {
             // SAFETY: the pointer is not null
             unsafe {

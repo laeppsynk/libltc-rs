@@ -1,10 +1,6 @@
 extern crate libc;
 
-use libltc_rs::{
-    consts::{LtcBgFlags, LtcBgFlagsKind},
-    encoder::LTCEncoder,
-    LTCTVStandard, SMPTETimecode, Timezone,
-};
+use libltc_rs::prelude::*;
 use std::io::Write;
 
 use std::env;
@@ -52,7 +48,8 @@ fn main() {
     let flags = *LtcBgFlags::default().set(LtcBgFlagsKind::LTC_USE_DATE);
 
     // Initialize the LTC Encoder
-    let mut encoder = LTCEncoder::try_new(1.0, 1.0, LTCTVStandard::default(), flags).unwrap();
+    let config = LTCEncoderConfig::default();
+    let mut encoder = LTCEncoder::try_new(&config).unwrap();
 
     encoder.set_buffersize(sample_rate, fps).unwrap();
     encoder
@@ -92,7 +89,7 @@ fn main() {
         if len > 0 {
             // Assuming buf is a slice of raw bytes or samples, you need to write this to the file
             match file.write_all(&buf[..len]) {
-                Ok(_) => total_samples += len as usize, // Increment the total samples written
+                Ok(_) => total_samples += len, // Increment the total samples written
                 Err(e) => {
                     eprintln!("Error writing to file: {}", e);
                     exit(1);

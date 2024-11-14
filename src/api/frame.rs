@@ -1,9 +1,9 @@
 use super::LTCTVStandard;
 use super::SMPTETimecode;
+use crate::api::consts;
+use crate::api::consts::LtcBgFlags;
+use crate::api::consts::SampleType;
 use crate::api::TimecodeWasWrapped;
-use crate::consts;
-use crate::consts::LtcBgFlags;
-use crate::consts::SampleType;
 use crate::error::TimecodeError;
 use crate::raw;
 
@@ -105,7 +105,6 @@ impl Default for LTCFrameExt {
 
 impl Drop for LTCFrameExt {
     fn drop(&mut self) {
-        dbg!("Dropping LTCFrameExt");
         if !self.inner_unsafe_ptr.is_null() {
             // SAFETY: the pointer is assumed to not be null
             unsafe {

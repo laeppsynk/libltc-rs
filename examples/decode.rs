@@ -1,7 +1,6 @@
 extern crate libc;
 
-use libltc_rs::api::decoder::LTCDecoder;
-use libltc_rs::consts::{LtcBgFlags, LtcBgFlagsKind, SampleType};
+use libltc_rs::prelude::*;
 use std::env;
 use std::fs::File;
 use std::io::{self, Read};
@@ -42,7 +41,11 @@ fn main() {
     let mut sound: Vec<SampleType> = vec![0; BUFFER_SIZE];
 
     // Create the LTC decoder
-    let mut decoder = LTCDecoder::try_new(apv, 32).unwrap();
+    let config = LTCDecoderConfig {
+        apv,
+        queue_size: 32,
+    };
+    let mut decoder = LTCDecoder::try_new(&config).unwrap();
 
     loop {
         let n = match file.read_exact(sound.as_mut_slice()) {

@@ -4,8 +4,8 @@ use super::consts::LtcBgFlags;
 use super::frame::LTCFrame;
 use super::LTCTVStandard;
 use super::SMPTETimecode;
+use crate::api::consts::SampleType;
 use crate::api::TimecodeWasWrapped;
-use crate::consts::SampleType;
 use crate::error::LTCEncoderError;
 use crate::error::TimecodeError;
 use crate::raw;
@@ -28,7 +28,7 @@ pub struct LTCEncoderConfig {
     pub sample_rate: f64,
     pub fps: f64,
     pub standard: LTCTVStandard,
-    pub flags: crate::consts::LtcBgFlags,
+    pub flags: LtcBgFlags,
 }
 
 impl Default for LTCEncoderConfig {
@@ -190,7 +190,7 @@ impl<'a> LTCEncoder {
         sample_rate: f64,
         fps: f64,
         standard: LTCTVStandard,
-        flags: crate::consts::LtcBgFlags,
+        flags: LtcBgFlags,
     ) -> Result<(), LTCEncoderError> {
         let result = unsafe {
             raw::ltc_encoder_reinit(
@@ -280,7 +280,7 @@ impl<'a> LTCEncoder {
 
 #[cfg(test)]
 mod tests {
-    use crate::consts::{LtcBgFlags, LtcBgFlagsKind};
+    use crate::api::consts::LtcBgFlags;
 
     use super::*;
     #[test]
