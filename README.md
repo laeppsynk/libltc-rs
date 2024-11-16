@@ -22,10 +22,14 @@ export LD_LIBRARY_PATH=/usr/local/lib
 
 ```bash
 cargo run --example simple
-cargo run --example encode -- test.txt  # creates test.txt
-cargo run --example decode -- test.txt  # reads test.txt
+cargo run --example encode -- test.txt  # creates test.raw
+cargo run --example decode -- test.txt  # reads test.raw
 ```
 
+When opening these raw files with an audio software like Audacity, it will most
+likely not work as intended. A script like
+[raw_to_wav.py](./examples/raw_to_wav.py) can be used to convert the raw file
+to a wav file.
 
 ## Tips on debugging memory leaks
 
