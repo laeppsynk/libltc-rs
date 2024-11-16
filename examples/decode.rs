@@ -70,16 +70,17 @@ fn main() {
     let mut decoder = LTCDecoder::try_new(&config).unwrap();
 
     loop {
-        let n = match file.read_exact(sound.as_mut_slice()) {
-            Ok(_) => BUFFER_SIZE,
-            Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => {
-                break; // End of file reached
-            }
+        let n = match file.read(sound.as_mut_slice()) {
+            Ok(n) => n,
             Err(_) => {
                 eprintln!("Error reading from file.");
                 exit(1);
             }
         };
+
+        if n == 0 {
+            break;
+        }
 
         decoder.write(&sound[0..n], total);
 
@@ -90,8 +91,12 @@ fn main() {
 
             // Print out the decoded timecode
             println!(
-                "{:04}-{:02}-{:02} {} {:02}:{:02}:{:02}{:02} | {:8} {:8} {} {}",
-                stime.years(),
+                "{:04}-{:02}-{:02} {} {:02}:{:02}:{:02}{}{:02} | {:8} {:8} {}",
+                if (stime.years() < 67) {
+                    2000 + stime.years() as i32
+                } else {
+                    1900 + stime.years() as i32
+                },
                 stime.months(),
                 stime.days(),
                 stime.timezone(),
@@ -108,6 +113,5 @@ fn main() {
 
         total += n as i64;
     }
-
     eprintln!("Done: read {} samples from '{}'", total, filename);
 }

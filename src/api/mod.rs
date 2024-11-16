@@ -128,20 +128,24 @@ impl SMPTETimecode {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct Timezone([i8; 6]);
 
 impl Display for Timezone {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let timezone = self.0;
-        let timezone_u8 = timezone
-            .into_iter()
-            .map(|x| x.try_into().unwrap())
-            .collect::<Vec<u8>>();
-        let timezone_str = std::str::from_utf8(&timezone_u8).unwrap();
-        write!(f, "{}", timezone_str)
+        let u8_timezone = self.0.iter().map(|x| *x as u8).collect::<Vec<u8>>();
+
+        let str = std::str::from_utf8(u8_timezone.as_slice()).unwrap();
+        write!(f, "{}", str)
     }
 }
 
+impl Default for Timezone {
+    fn default() -> Self {
+        let bytes: &[u8; 6] = b"+0000\0";
+        bytes.into()
+    }
+}
 impl From<&[i8; 6]> for Timezone {
     fn from(timezone: &[i8; 6]) -> Self {
         Timezone(timezone.to_owned())

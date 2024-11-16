@@ -33,7 +33,7 @@ fn main() {
     let filename;
     let mut sample_rate = 48000.0;
     let mut fps = 25.0;
-    let mut length = 2.0;
+    let mut length = 1.0;
 
     if args.len() > 1 {
         filename = &args[1];
@@ -47,8 +47,11 @@ fn main() {
             length = args[4].parse().unwrap_or(2.0);
         }
     } else {
-        eprintln!("ltcencode - test/example application to encode LTC to a file\n");
-        eprintln!("Usage: ltcencode <filename> [sample rate [frame rate [duration in s]]]\n");
+        eprintln!("encode - test/example application to encode LTC to a file\n");
+        eprintln!(
+            "Usage: {} <filename> [sample rate [frame rate [duration in s]]]\n",
+            args[0]
+        );
         eprintln!("default-values:");
         eprintln!(" sample rate: 48000.0 [SPS], frame rate: 25.0 [fps], duration: 2.0 [sec]\n");
         eprintln!("Report bugs to Robin Gareus <robin@gareus.org>\n");
@@ -64,8 +67,13 @@ fn main() {
     };
 
     // Initialize the timecode structure
-    let timezone: Timezone = b"+00100".into();
-    let st = SMPTETimecode::new(timezone, 3, 1, 10, 0, 0, 0, 1);
+    let timezone: &[u8; 6] = b"+0100\0";
+    let timezone = timezone.into();
+    println!("{}", timezone);
+
+    let st = SMPTETimecode::new(timezone, 8, 12, 31, 23, 59, 59, 0);
+
+    println!("{}", &st.timezone());
     let flags = *LtcBgFlags::default().set(LtcBgFlagsKind::LTC_USE_DATE);
 
     // Initialize the LTC Encoder
@@ -86,7 +94,6 @@ fn main() {
         )
         .unwrap();
 
-    encoder.set_filter(0.0);
     encoder.set_filter(25.0);
     encoder.set_volume(-18.0).unwrap();
 
