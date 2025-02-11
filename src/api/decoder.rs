@@ -8,6 +8,8 @@ pub struct LTCDecoder {
     inner_unsafe_ptr: *mut raw::LTCDecoder,
 }
 
+unsafe impl Send for LTCDecoder {}
+
 impl Drop for LTCDecoder {
     fn drop(&mut self) {
         let r = unsafe { raw::ltc_decoder_free(self.inner_unsafe_ptr) };

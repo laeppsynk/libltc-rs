@@ -1,5 +1,3 @@
-use core::slice;
-
 use super::consts::LtcBgFlags;
 use super::frame::LTCFrame;
 use super::LTCTVStandard;
@@ -9,11 +7,14 @@ use crate::api::TimecodeWasWrapped;
 use crate::error::LTCEncoderError;
 use crate::error::TimecodeError;
 use crate::raw;
+use core::slice;
 
 #[derive(Debug)]
 pub struct LTCEncoder {
     inner_unsafe_ptr: *mut raw::LTCEncoder,
 }
+
+unsafe impl Send for LTCEncoder {}
 
 impl Drop for LTCEncoder {
     fn drop(&mut self) {
