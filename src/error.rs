@@ -46,7 +46,7 @@ impl std::fmt::Display for LTCEncoderError {
             LTCEncoderError::BufferSizeError => write!(f, "Error setting buffer size"),
             LTCEncoderError::VolumeError => write!(f, "Error setting volume"),
             LTCEncoderError::EncodeError => write!(f, "Error during encoding"),
-            LTCEncoderError::TimecodeError(e) => write!(f, "Timecode error: {}", e),
+            LTCEncoderError::TimecodeError(e) => write!(f, "Timecode error: {e}"),
         }
     }
 }
@@ -55,7 +55,7 @@ impl std::fmt::Display for LTCDecoderError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             LTCDecoderError::CreateError => write!(f, "Error creating LTC decoder"),
-            LTCDecoderError::TImecodeError(e) => write!(f, "Timecode error: {}", e),
+            LTCDecoderError::TImecodeError(e) => write!(f, "Timecode error: {e}"),
         }
     }
 }

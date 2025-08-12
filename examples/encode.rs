@@ -61,7 +61,7 @@ fn main() {
     let file = match File::create(filename) {
         Ok(file) => file,
         Err(_) => {
-            eprintln!("Error: cannot open file '{}' for writing.", filename);
+            eprintln!("Error: cannot open file '{filename}' for writing.");
             exit(1);
         }
     };
@@ -69,7 +69,7 @@ fn main() {
     // Initialize the timecode structure
     let timezone: &[u8; 6] = b"+0100\0";
     let timezone = timezone.into();
-    println!("{}", timezone);
+    println!("{timezone}");
 
     let st = SMPTETimecode::new(timezone, 8, 12, 31, 23, 59, 59, 0);
 
@@ -99,9 +99,9 @@ fn main() {
 
     encoder.set_timecode(&st);
 
-    println!("sample rate: {:.2}", sample_rate);
-    println!("frames/sec: {:.2}", fps);
-    println!("secs to write: {:.2}", length);
+    println!("sample rate: {sample_rate:.2}");
+    println!("frames/sec: {fps:.2}");
+    println!("secs to write: {length:.2}");
     println!("sample format: 8bit unsigned mono");
 
     let vframe_last = (length * fps) as i32;
@@ -119,7 +119,7 @@ fn main() {
             match file.write_all(&buf[..len]) {
                 Ok(_) => total_samples += len, // Increment the total samples written
                 Err(e) => {
-                    eprintln!("Error writing to file: {}", e);
+                    eprintln!("Error writing to file: {e}");
                     exit(1);
                 }
             }
@@ -127,5 +127,5 @@ fn main() {
         encoder.inc_timecode().unwrap();
     }
 
-    println!("Done: wrote {} samples to '{}'", total_samples, filename);
+    println!("Done: wrote {total_samples} samples to '{filename}'");
 }

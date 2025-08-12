@@ -25,7 +25,7 @@ extern crate libc;
 use libltc_rs::prelude::*;
 use std::env;
 use std::fs::File;
-use std::io::{self, Read};
+use std::io::Read;
 use std::process::exit;
 
 const BUFFER_SIZE: usize = 1024;
@@ -52,19 +52,19 @@ fn main() {
     let mut file = match File::open(filename) {
         Ok(file) => file,
         Err(_) => {
-            eprintln!("Error opening '{}'", filename);
+            eprintln!("Error opening '{filename}'");
             exit(1);
         }
     };
 
-    eprintln!("* Reading from: {}", filename);
+    eprintln!("* Reading from: {filename}");
 
     let mut total = 0;
     let mut sound: Vec<SampleType> = vec![0; BUFFER_SIZE];
 
     // Create the LTC decoder
     let config = LTCDecoderConfig {
-        apv,
+        initial_apv: apv,
         queue_size: 32,
     };
     let mut decoder = LTCDecoder::try_new(&config).unwrap();
@@ -92,7 +92,7 @@ fn main() {
             // Print out the decoded timecode
             println!(
                 "{:04}-{:02}-{:02} {} {:02}:{:02}:{:02}{}{:02} | {:8} {:8} {}",
-                if (stime.years() < 67) {
+                if stime.years() < 67 {
                     2000 + stime.years() as i32
                 } else {
                     1900 + stime.years() as i32
@@ -113,5 +113,5 @@ fn main() {
 
         total += n as i64;
     }
-    eprintln!("Done: read {} samples from '{}'", total, filename);
+    eprintln!("Done: read {total} samples from '{filename}'");
 }
