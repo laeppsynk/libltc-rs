@@ -6,6 +6,7 @@ use crate::raw;
 #[derive(Debug)]
 pub struct LTCDecoder {
     inner_unsafe_ptr: *mut raw::LTCDecoder,
+    _config: LTCDecoderConfig,
 }
 
 unsafe impl Send for LTCDecoder {}
@@ -21,14 +22,16 @@ impl Drop for LTCDecoder {
 
 #[derive(Debug, Copy, Clone)]
 pub struct LTCDecoderConfig {
-    pub apv: i32,
+    /// apv	audio-frames per video frame. This is just used for initial settings, the speed is tracked dynamically. setting this in the right ballpark is needed to properly decode the first LTC frame in a sequence.
+    pub initial_apv: i32,
+    /// length of the internal queue to store decoded frames to SMPTEDecoderWrite.
     pub queue_size: i32,
 }
 
 impl Default for LTCDecoderConfig {
     fn default() -> Self {
         LTCDecoderConfig {
-            apv: 1920,
+            initial_apv: 1920,
             queue_size: 32,
         }
     }
@@ -38,12 +41,13 @@ impl LTCDecoder {
     pub fn try_new(config: &LTCDecoderConfig) -> Result<Self, LTCDecoderError> {
         // Safety: the C function does not modify memory, it only allocates memory. Drop is
         // implemented for LTCDecoder
-        let decoder = unsafe { raw::ltc_decoder_create(config.apv, config.queue_size) };
+        let decoder = unsafe { raw::ltc_decoder_create(config.initial_apv, config.queue_size) };
         if decoder.is_null() {
             Err(LTCDecoderError::CreateError)
         } else {
             Ok(LTCDecoder {
                 inner_unsafe_ptr: decoder,
+                _config: *config,
             })
         }
     }

@@ -12,6 +12,7 @@ use core::slice;
 #[derive(Debug)]
 pub struct LTCEncoder {
     inner_unsafe_ptr: *mut raw::LTCEncoder,
+    config: LTCEncoderConfig,
 }
 
 unsafe impl Send for LTCEncoder {}
@@ -59,9 +60,27 @@ impl<'a> LTCEncoder {
         } else {
             Ok(LTCEncoder {
                 inner_unsafe_ptr: encoder,
+                config: *config,
             })
         }
     }
+
+    pub fn fps(&self) -> f64 {
+        self.config.fps
+    }
+
+    pub fn sample_rate(&self) -> f64 {
+        self.config.sample_rate
+    }
+
+    pub fn standard(&self) -> LTCTVStandard {
+        self.config.standard
+    }
+
+    // The internal flags might not stay consistent with the config so we don't expose it
+    //pub fn flags(&self) -> LtcBgFlags {
+    //    self.config.flags
+    //}
 
     // TODO: this might be incorrect
     pub fn set_timecode(&mut self, timecode: &SMPTETimecode) {
@@ -194,6 +213,9 @@ impl<'a> LTCEncoder {
         flags: LtcBgFlags,
     ) -> Result<(), LTCEncoderError> {
         let result = unsafe {
+            self.config.sample_rate = sample_rate;
+            self.config.fps = fps;
+            self.config.standard = standard;
             raw::ltc_encoder_reinit(
                 self.inner_unsafe_ptr,
                 sample_rate,

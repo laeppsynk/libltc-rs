@@ -18,7 +18,7 @@ fn main() {
     let mut encoder = match LTCEncoder::try_new(&config) {
         Ok(encoder) => encoder,
         Err(e) => {
-            eprintln!("Error creating LTC encoder: {}", e);
+            eprintln!("Error creating LTC encoder: {e}");
             return;
         }
     };
@@ -56,7 +56,7 @@ fn main() {
 
     match encoder.end_encode() {
         Ok(_) => println!("Encoding finished successfully."),
-        Err(e) => eprintln!("Error ending encoding: {}", e),
+        Err(e) => eprintln!("Error ending encoding: {e}"),
     }
     encoder.reset();
 }

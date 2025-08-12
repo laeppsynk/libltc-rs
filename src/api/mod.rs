@@ -44,8 +44,7 @@ impl Display for SMPTETimecode {
         let frame = self.frame();
         write!(
             f,
-            "{} {:02}:{:02}:{:02}:{:02}:{:02}:{:02}:{:02}",
-            timezone, years, months, days, hours, minutes, seconds, frame
+            "{timezone} {years:02}:{months:02}:{days:02}:{hours:02}:{minutes:02}:{seconds:02}:{frame:02}"
         )
     }
 }
@@ -136,7 +135,7 @@ impl Display for Timezone {
         let u8_timezone = self.0.iter().map(|x| *x as u8).collect::<Vec<u8>>();
 
         let str = std::str::from_utf8(u8_timezone.as_slice()).unwrap();
-        write!(f, "{}", str)
+        write!(f, "{str}")
     }
 }
 
