@@ -104,29 +104,29 @@ impl SMPTETimecode {
     pub fn timezone(&self) -> Timezone {
         unsafe { (*self.inner_unsafe_ptr).timezone }.into()
     }
-    pub fn years(&self) -> u8 {
+    pub const fn years(&self) -> u8 {
         unsafe { (*self.inner_unsafe_ptr).years }
     }
-    pub fn months(&self) -> u8 {
+    pub const fn months(&self) -> u8 {
         unsafe { (*self.inner_unsafe_ptr).months }
     }
-    pub fn days(&self) -> u8 {
+    pub const fn days(&self) -> u8 {
         unsafe { (*self.inner_unsafe_ptr).days }
     }
-    pub fn hours(&self) -> u8 {
+    pub const fn hours(&self) -> u8 {
         unsafe { (*self.inner_unsafe_ptr).hours }
     }
-    pub fn minutes(&self) -> u8 {
+    pub const fn minutes(&self) -> u8 {
         unsafe { (*self.inner_unsafe_ptr).mins }
     }
-    pub fn seconds(&self) -> u8 {
+    pub const fn seconds(&self) -> u8 {
         unsafe { (*self.inner_unsafe_ptr).secs }
     }
-    pub fn frame(&self) -> u8 {
+    pub const fn frame(&self) -> u8 {
         unsafe { (*self.inner_unsafe_ptr).frame }
     }
 
-    pub fn to_seconds_total(&self, fps: f32) -> f64 {
+    pub const fn to_seconds_total(&self, fps: f32) -> f64 {
         assert!(fps > 0.0, "FPS must be greater than 0");
 
         (self.years() as f64 * 365.0 * 24.0 * 3600.0)
