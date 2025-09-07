@@ -126,16 +126,16 @@ impl SMPTETimecode {
         unsafe { (*self.inner_unsafe_ptr).frame }
     }
 
-    pub fn to_seconds_total(&self, fps: f64) -> Result<f64, TimecodeError> {
+    pub fn to_seconds_total(&self, fps: f32) -> f64 {
         assert!(fps > 0.0, "FPS must be greater than 0");
-        let total_seconds = (self.years() as f64 * 365.0 * 24.0 * 3600.0)
+
+        (self.years() as f64 * 365.0 * 24.0 * 3600.0)
             + (self.months() as f64 * 30.0 * 24.0 * 3600.0)
             + (self.days() as f64 * 24.0 * 3600.0)
             + (self.hours() as f64 * 3600.0)
             + (self.minutes() as f64 * 60.0)
             + (self.seconds() as f64)
-            + (self.frame() as f64 / fps);
-        Ok(total_seconds)
+            + (self.frame() as f64 / fps as f64)
     }
 }
 
