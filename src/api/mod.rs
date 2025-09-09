@@ -15,6 +15,26 @@ pub struct SMPTETimecode {
     inner_unsafe_ptr: *mut raw::SMPTETimecode,
 }
 
+impl Clone for SMPTETimecode {
+    fn clone(&self) -> Self {
+        let raw = raw::SMPTETimecode {
+            timezone: self.timezone().to_raw(),
+            years: self.years(),
+            months: self.months(),
+            days: self.days(),
+            hours: self.hours(),
+            mins: self.minutes(),
+            secs: self.seconds(),
+            frame: self.frame(),
+        };
+
+        let boxed_inner = Box::new(raw);
+        SMPTETimecode {
+            inner_unsafe_ptr: Box::into_raw(boxed_inner),
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub enum TimecodeWasWrapped {
     No = 0,
@@ -216,5 +236,26 @@ impl From<LTCTVStandard> for raw::LTC_TV_STANDARD {
 impl LTCTVStandard {
     pub(crate) fn to_raw(self) -> raw::LTC_TV_STANDARD {
         self.into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_timecode_clone() {
+        let tc1 = SMPTETimecode::new(Timezone::from(*b"+0200\0"), 23, 3, 15, 10, 30, 45, 12);
+        let tc2 = tc1.clone();
+        assert_eq!(tc1.years(), tc2.years());
+        assert_eq!(tc1.months(), tc2.months());
+        assert_eq!(tc1.days(), tc2.days());
+        assert_eq!(tc1.hours(), tc2.hours());
+        assert_eq!(tc1.minutes(), tc2.minutes());
+        assert_eq!(tc1.seconds(), tc2.seconds());
+        assert_eq!(tc1.frame(), tc2.frame());
+        assert_eq!(tc1.timezone().to_raw(), tc2.timezone().to_raw());
+
+        drop(tc1);
+        drop(tc2);
     }
 }
