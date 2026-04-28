@@ -11,8 +11,8 @@ readme = "README.md"
 exclude = ["/examples"]
 
 [dependencies]
-libc = "0.2"
+libc = "0.2.186"
 
 [build-dependencies]
-build-print = "0.1"
-bindgen = "0.70"
+build-print = "1.0.1"
+bindgen = "0.72.1"
